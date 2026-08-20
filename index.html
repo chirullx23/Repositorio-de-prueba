@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sonricks Store — Golpea con estilo</title>
+  <meta name="description" content="Sonricks Store: balones de fútbol soccer de alto rendimiento. Golpea con estilo, juega con precisión.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Hoja de estilos externa -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+  <!-- ===================== HEADER / NAV ===================== -->
+  <header class="site-header">
+    <nav class="nav" aria-label="Navegación principal">
+      <a href="{{ url_for('index') }}#inicio" class="nav__logo" aria-label="Sonricks Store, ir al inicio">
+        <svg class="logo-svg" viewBox="0 0 64 64" role="img" aria-label="Logotipo Sonricks Store" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+          <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+          <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="nav__brand">Sonricks<span class="nav__brand-accent">Store</span></span>
+      </a>
+
+      <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenu" aria-label="Abrir menú de navegación">
+        <span class="nav__toggle-bar"></span>
+        <span class="nav__toggle-bar"></span>
+        <span class="nav__toggle-bar"></span>
+      </button>
+
+      <ul class="nav__menu" id="navMenu">
+        <li><a href="{{ url_for('index') }}#inicio">Inicio</a></li>
+        <li><a href="{{ url_for('index') }}#productos">Productos</a></li>
+        <li><a href="{{ url_for('index') }}#beneficios">Beneficios</a></li>
+        <li><a href="{{ url_for('index') }}#testimonios">Testimonios</a></li>
+        <li><a href="{{ url_for('index') }}#contacto">Contacto</a></li>
+      </ul>
+
+      <a href="{{ url_for('index') }}#productos" class="btn btn--acento nav__cta">Comprar ahora</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="inicio">
+      <div class="hero__texto">
+        <p class="eyebrow">Temporada 2026 · Panel a panel</p>
+        <h1 class="hero__titulo">Golpea con <span class="hero__titulo-acento">estilo</span>.</h1>
+        <p class="hero__subtitulo">
+          Balones de fútbol soccer diseñados para quienes sienten cada partido como una final.
+          Costura reforzada, vuelo estable y el carácter de Sonricks Store en cada panel.
+        </p>
+        <div class="hero__acciones">
+          <a href="{{ url_for('index') }}#productos" class="btn btn--primario">Ver catálogo</a>
+          <a href="{{ url_for('index') }}#beneficios" class="btn btn--fantasma">Por qué Sonricks</a>
+        </div>
+      </div>
+      <div class="hero__imagen">
+        <img
+          src="https://images.unsplash.com/photo-1614632537197-38a17061c2bd?auto=format&fit=crop&w=900&q=80"
+          alt="Balón de fútbol soccer Sonricks sobre césped, listo para el disparo"
+          width="900" height="900"
+        >
+      </div>
+    </section>
+
+    <div class="stitch-divider" aria-hidden="true"></div>
+
+    <!-- ===================== PRODUCTOS ===================== -->
+    <section class="productos" id="productos">
+      <div class="section__intro">
+        <p class="eyebrow">Catálogo</p>
+        <h2>Elige tu balón</h2>
+      </div>
+
+      <div class="productos__grid">
+        <article class="producto">
+          <figure class="producto__figura">
+            <img src="https://images.unsplash.com/photo-1614632537197-38a17061c2bd?auto=format&fit=crop&w=500&q=80" alt="Balón Sonricks Pro Match, edición cancha" width="500" height="500" loading="lazy">
+            <figcaption class="producto__tag">Pro Match</figcaption>
+          </figure>
+          <h3>Sonricks Pro Match</h3>
+          <p class="producto__desc">Balón oficial de competencia, vuelo estable y costura termosellada.</p>
+          <div class="producto__pie">
+            <span class="producto__precio">$899 MXN</span>
+            <button class="btn btn--pequeno" type="button">Agregar</button>
+          </div>
+        </article>
+
+        <article class="producto">
+          <figure class="producto__figura">
+            <img src="https://images.unsplash.com/photo-1552667466-07770ae110d0?auto=format&fit=crop&w=500&q=80" alt="Balón Sonricks Street, edición urbana" width="500" height="500" loading="lazy">
+            <figcaption class="producto__tag">Street</figcaption>
+          </figure>
+          <h3>Sonricks Street</h3>
+          <p class="producto__desc">Resistente al pavimento, ideal para cascarita entre amigos.</p>
+          <div class="producto__pie">
+            <span class="producto__precio">$599 MXN</span>
+            <button class="btn btn--pequeno" type="button">Agregar</button>
+          </div>
+        </article>
+
+        <article class="producto">
+          <figure class="producto__figura">
+            <img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=500&q=80" alt="Balón Sonricks Training, edición entrenamiento" width="500" height="500" loading="lazy">
+            <figcaption class="producto__tag">Training</figcaption>
+          </figure>
+          <h3>Sonricks Training</h3>
+          <p class="producto__desc">Pensado para sesiones intensas: ligero, durable y preciso.</p>
+          <div class="producto__pie">
+            <span class="producto__precio">$499 MXN</span>
+            <button class="btn btn--pequeno" type="button">Agregar</button>
+          </div>
+        </article>
+
+        <article class="producto">
+          <figure class="producto__figura">
+            <img src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=500&q=80" alt="Balón Sonricks Kids, edición infantil" width="500" height="500" loading="lazy">
+            <figcaption class="producto__tag">Kids</figcaption>
+          </figure>
+          <h3>Sonricks Kids</h3>
+          <p class="producto__desc">Talla reducida y peso ajustado para los futuros cracks.</p>
+          <div class="producto__pie">
+            <span class="producto__precio">$399 MXN</span>
+            <button class="btn btn--pequeno" type="button">Agregar</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== BENEFICIOS ===================== -->
+    <section class="beneficios" id="beneficios">
+      <div class="section__intro section__intro--claro">
+        <p class="eyebrow eyebrow--claro">Ventajas</p>
+        <h2>Por qué elegir Sonricks</h2>
+      </div>
+      <div class="beneficios__grid">
+        <article class="beneficio">
+          <span class="beneficio__icono" aria-hidden="true">⚡</span>
+          <h3>Envío en 48h</h3>
+          <p>Recíbelo listo para tu próximo partido, en toda la república.</p>
+        </article>
+        <article class="beneficio">
+          <span class="beneficio__icono" aria-hidden="true">🛡️</span>
+          <h3>Garantía de costura</h3>
+          <p>12 meses de garantía contra defectos de fabricación.</p>
+        </article>
+        <article class="beneficio">
+          <span class="beneficio__icono" aria-hidden="true">🏆</span>
+          <h3>Calidad de competencia</h3>
+          <p>Balones probados bajo estándares de vuelo y rebote profesional.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== TESTIMONIOS ===================== -->
+    <section class="testimonios" id="testimonios">
+      <div class="section__intro">
+        <p class="eyebrow">Comunidad</p>
+        <h2>Lo que dice quien ya juega con Sonricks</h2>
+      </div>
+      <div class="testimonios__grid">
+        <article class="testimonio">
+          <p class="testimonio__estrellas" aria-label="5 de 5 estrellas">★★★★★</p>
+          <p class="testimonio__texto">"El Pro Match tiene un vuelo increíblemente estable, se nota la diferencia desde el primer toque."</p>
+          <p class="testimonio__autor">— Diego R.</p>
+        </article>
+        <article class="testimonio">
+          <p class="testimonio__estrellas" aria-label="5 de 5 estrellas">★★★★★</p>
+          <p class="testimonio__texto">"Compré el Street para la cascarita del barrio y sigue como nuevo después de meses."</p>
+          <p class="testimonio__autor">— Ana L.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== ASIDE: OFERTA ===================== -->
+    <aside class="oferta" id="oferta">
+      <div class="oferta__contenido">
+        <p class="eyebrow eyebrow--claro">Oferta por tiempo limitado</p>
+        <h2>15% de descuento en tu primer balón</h2>
+        <p>Suscríbete y recibe tu código de descuento al instante.</p>
+        <form class="oferta__form" id="newsletterForm">
+          <label for="email" class="visually-hidden">Correo electrónico</label>
+          <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+          <button type="submit" class="btn btn--acento">Quiero mi descuento</button>
+        </form>
+        <p class="oferta__mensaje" id="ofertaMensaje" role="status" aria-live="polite"></p>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site-footer" id="contacto">
+    <div class="site-footer__grid">
+      <div>
+        <p class="nav__brand nav__brand--footer">Sonricks<span class="nav__brand-accent">Store</span></p>
+        <p class="site-footer__eslogan">Golpea con estilo.</p>
+      </div>
+      <div>
+        <h3>Contacto</h3>
+        <p>hola@sonricksstore.com</p>
+        <p>Zapopan, Jalisco, México</p>
+      </div>
+      <div>
+        <h3>Síguenos</h3>
+        <ul class="site-footer__social">
+          <li><a href="#" aria-label="Instagram de Sonricks Store">Instagram</a></li>
+          <li><a href="#" aria-label="TikTok de Sonricks Store">TikTok</a></li>
+          <li><a href="#" aria-label="Facebook de Sonricks Store">Facebook</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="site-footer__legal">© 2026 Sonricks Store. Todos los derechos reservados.</p>
+  </footer>
+
+  <!-- Script externo -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
