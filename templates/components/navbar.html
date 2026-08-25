@@ -1,0 +1,29 @@
+<!-- ===================== HEADER / NAV ===================== -->
+<header class="site-header">
+  <nav class="nav" aria-label="Navegación principal">
+    <a href="{{ url_for('home') }}#inicio" class="nav__logo" aria-label="Sonricks Store, ir al inicio">
+      <svg class="logo-svg" viewBox="0 0 64 64" role="img" aria-label="Logotipo Sonricks Store" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+        <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+        <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="nav__brand">Sonricks<span class="nav__brand-accent">Store</span></span>
+    </a>
+
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenu" aria-label="Abrir menú de navegación">
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+    </button>
+
+    <ul class="nav__menu" id="navMenu">
+      <li><a href="{{ url_for('home') }}#inicio">Inicio</a></li>
+      <li><a href="{{ url_for('home') }}#productos">Productos</a></li>
+      <li><a href="{{ url_for('home') }}#beneficios">Beneficios</a></li>
+      <li><a href="{{ url_for('home') }}#testimonios">Testimonios</a></li>
+      <li><a href="{{ url_for('home') }}#contacto">Contacto</a></li>
+    </ul>
+
+    <a href="{{ url_for('home') }}#productos" class="btn btn--acento nav__cta">Comprar ahora</a>
+  </nav>
+</header>

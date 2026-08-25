@@ -1,6 +1,7 @@
 # =========================================================
-# SONRICKS STORE — parangarin.py
-# Servidor Flask para la landing page de venta de balones
+# SONRICKS STORE — sonricksstore.py
+# Servidor Flask: renderiza home.html, que extiende layout.html
+# e incluye components/navbar.html y components/footer.html
 # =========================================================
 
 from flask import Flask, render_template, url_for
@@ -44,10 +45,10 @@ ESLOGAN = "Golpea con estilo."
 
 
 @app.route("/")
-def index():
-    """Ruta principal: renderiza la landing page completa."""
+def home():
+    """Ruta principal: renderiza home.html (usa layout.html + components/)."""
     return render_template(
-        "index.html",
+        "home.html",
         productos=PRODUCTOS,
         eslogan=ESLOGAN,
     )
