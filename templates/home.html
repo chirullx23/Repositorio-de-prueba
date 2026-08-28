@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
-
-{% block content %}
-
+{% block titulo %}Sonricks Store — Golpea con estilo{% endblock %}
+{% block contenido %}
   <!-- ===================== HERO ===================== -->
   <section class="hero" id="inicio">
     <div class="hero__texto">
@@ -27,30 +26,7 @@
 
   <div class="stitch-divider" aria-hidden="true"></div>
 
-  <!-- ===================== PRODUCTOS ===================== -->
-  <section class="productos" id="productos">
-    <div class="section__intro">
-      <p class="eyebrow">Catálogo</p>
-      <h2>Elige tu balón</h2>
-    </div>
 
-    <div class="productos__grid">
-      {% for producto in productos %}
-      <article class="producto">
-        <figure class="producto__figura">
-          <img src="{{ producto.imagen }}" alt="Balón {{ producto.nombre }}, edición {{ producto.tag }}" width="500" height="500" loading="lazy">
-          <figcaption class="producto__tag">{{ producto.tag }}</figcaption>
-        </figure>
-        <h3>{{ producto.nombre }}</h3>
-        <p class="producto__desc">{{ producto.descripcion }}</p>
-        <div class="producto__pie">
-          <span class="producto__precio">{{ producto.precio }}</span>
-          <button class="btn btn--pequeno" type="button">Agregar</button>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
 
   <!-- ===================== BENEFICIOS ===================== -->
   <section class="beneficios" id="beneficios">
