@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión o crear cuenta — Sonricks Store</title>
+  <meta name="description" content="Inicia sesión o crea tu cuenta en Sonricks Store para comprar balones de fútbol soccer de alto rendimiento.">
+  <meta name="robots" content="noindex">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Misma hoja de estilos que el resto del sitio -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+  <!-- ===================== HEADER / NAV (idéntico a index.html) ===================== -->
+  <header class="site-header">
+    <nav class="nav" aria-label="Navegación principal">
+      <a href="{{ url_for('index') }}#inicio" class="nav__logo" aria-label="Sonricks Store, ir al inicio">
+        <svg class="logo-svg" viewBox="0 0 64 64" role="img" aria-label="Logotipo Sonricks Store" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+          <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+          <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="nav__brand">Sonricks<span class="nav__brand-accent">Store</span></span>
+      </a>
+
+      <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenu" aria-label="Abrir menú de navegación">
+        <span class="nav__toggle-bar"></span>
+        <span class="nav__toggle-bar"></span>
+        <span class="nav__toggle-bar"></span>
+      </button>
+
+      <ul class="nav__menu" id="navMenu">
+        <li><a href="{{ url_for('index') }}#inicio">Inicio</a></li>
+        <li><a href="{{ url_for('index') }}#productos">Productos</a></li>
+        <li><a href="{{ url_for('index') }}#beneficios">Beneficios</a></li>
+        <li><a href="{{ url_for('index') }}#testimonios">Testimonios</a></li>
+        <li><a href="{{ url_for('index') }}#contacto">Contacto</a></li>
+      </ul>
+
+      <div class="nav__auth">
+        <button type="button" class="btn btn--fantasma btn--nav-auth" id="btnLogin" data-modal-open="login">Iniciar sesión</button>
+        <button type="button" class="btn btn--acento btn--nav-auth" id="btnRegistro" data-modal-open="registro">Registro</button>
+      </div>
+
+      <a href="{{ url_for('index') }}#productos" class="btn btn--acento nav__cta">Volver a la tienda</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===================== PÁGINA DE AUTENTICACIÓN ===================== -->
+    <section class="auth-page" id="autenticacion">
+      <div class="auth-page__contenedor">
+
+        <a href="{{ url_for('index') }}#inicio" class="auth-page__volver">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M15 4 L7 12 L15 20" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Volver a la tienda
+        </a>
+
+        <!-- Misma tarjeta que el modal de index.html, aquí en flujo normal -->
+        <div class="auth-modal__panel" id="authPanel">
+
+          <div class="auth-modal__marca" aria-hidden="true">
+            <svg class="logo-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+              <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+              <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <h1 class="auth-modal__titulo" id="authModalTitulo">Bienvenido de vuelta</h1>
+          <p class="auth-modal__subtitulo" id="authModalSubtitulo">Ingresa a tu cuenta Sonricks Store</p>
+
+          <div class="auth-tabs" role="tablist" aria-label="Elegir formulario">
+            <button type="button" class="auth-tabs__btn is-activa" id="tabLogin" role="tab" aria-selected="true" aria-controls="panelLogin" data-tab="login">Iniciar sesión</button>
+            <button type="button" class="auth-tabs__btn" id="tabRegistro" role="tab" aria-selected="false" aria-controls="panelRegistro" data-tab="registro">Crear cuenta</button>
+            <span class="auth-tabs__indicador" id="authIndicador" aria-hidden="true"></span>
+          </div>
+
+          <div class="auth-tabs__viewport">
+            <div class="auth-tabs__track" id="authTrack">
+
+              <!-- ---------- FORM: INICIAR SESIÓN ---------- -->
+              <form class="auth-form" id="panelLogin" role="tabpanel" aria-labelledby="tabLogin" novalidate>
+                <div class="auth-form__campo">
+                  <label for="loginEmail">Correo electrónico</label>
+                  <input type="email" id="loginEmail" name="email" placeholder="tucorreo@ejemplo.com" required autocomplete="email">
+                  <span class="auth-form__error" data-error-for="loginEmail"></span>
+                </div>
+
+                <div class="auth-form__campo">
+                  <label for="loginPassword">Contraseña</label>
+                  <div class="auth-form__campo-pass">
+                    <input type="password" id="loginPassword" name="password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+                    <button type="button" class="auth-form__ver" data-toggle-pass="loginPassword" aria-label="Mostrar contraseña">
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                    </button>
+                  </div>
+                  <span class="auth-form__error" data-error-for="loginPassword"></span>
+                </div>
+
+                <div class="auth-form__opciones">
+                  <label class="auth-form__check">
+                    <input type="checkbox" id="loginRecordar" name="recordar">
+                    <span>Recordarme</span>
+                  </label>
+                  <a href="#" class="auth-form__olvido">¿Olvidaste tu contraseña?</a>
+                </div>
+
+                <button type="submit" class="btn btn--primario auth-form__enviar">
+                  <span class="auth-form__enviar-texto">Iniciar sesión</span>
+                  <span class="auth-form__spinner" aria-hidden="true"></span>
+                </button>
+
+                <p class="auth-form__mensaje" data-mensaje-para="login" role="status" aria-live="polite"></p>
+              </form>
+
+              <!-- ---------- FORM: CREAR CUENTA ---------- -->
+              <form class="auth-form" id="panelRegistro" role="tabpanel" aria-labelledby="tabRegistro" novalidate hidden>
+                <div class="auth-form__campo">
+                  <label for="regNombre">Nombre completo</label>
+                  <input type="text" id="regNombre" name="nombre" placeholder="Tu nombre" required minlength="2" autocomplete="name">
+                  <span class="auth-form__error" data-error-for="regNombre"></span>
+                </div>
+
+                <div class="auth-form__campo">
+                  <label for="regEmail">Correo electrónico</label>
+                  <input type="email" id="regEmail" name="email" placeholder="tucorreo@ejemplo.com" required autocomplete="email">
+                  <span class="auth-form__error" data-error-for="regEmail"></span>
+                </div>
+
+                <div class="auth-form__campo">
+                  <label for="regPassword">Contraseña</label>
+                  <div class="auth-form__campo-pass">
+                    <input type="password" id="regPassword" name="password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+                    <button type="button" class="auth-form__ver" data-toggle-pass="regPassword" aria-label="Mostrar contraseña">
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                    </button>
+                  </div>
+                  <div class="auth-form__medidor" aria-hidden="true">
+                    <span data-medidor-segmento></span><span data-medidor-segmento></span><span data-medidor-segmento></span>
+                  </div>
+                  <span class="auth-form__error" data-error-for="regPassword"></span>
+                </div>
+
+                <label class="auth-form__check auth-form__check--terminos">
+                  <input type="checkbox" id="regTerminos" name="terminos" required>
+                  <span>Acepto los <a href="#">términos y condiciones</a></span>
+                </label>
+
+                <button type="submit" class="btn btn--primario auth-form__enviar">
+                  <span class="auth-form__enviar-texto">Crear cuenta</span>
+                  <span class="auth-form__spinner" aria-hidden="true"></span>
+                </button>
+
+                <p class="auth-form__mensaje" data-mensaje-para="registro" role="status" aria-live="polite"></p>
+              </form>
+
+            </div>
+          </div>
+
+          <p class="auth-modal__pie" id="authPie">
+            ¿Aún no tienes cuenta? <button type="button" class="auth-modal__enlace" data-tab-ir="registro">Regístrate aquí</button>
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER (idéntico a index.html) ===================== -->
+  <footer class="site-footer" id="contacto">
+    <div class="site-footer__grid">
+      <div>
+        <p class="nav__brand nav__brand--footer">Sonricks<span class="nav__brand-accent">Store</span></p>
+        <p class="site-footer__eslogan">Golpea con estilo.</p>
+      </div>
+      <div>
+        <h3>Contacto</h3>
+        <p>hola@sonricksstore.com</p>
+        <p>Zapopan, Jalisco, México</p>
+      </div>
+      <div>
+        <h3>Síguenos</h3>
+        <ul class="site-footer__social">
+          <li><a href="#" aria-label="Instagram de Sonricks Store">Instagram</a></li>
+          <li><a href="#" aria-label="TikTok de Sonricks Store">TikTok</a></li>
+          <li><a href="#" aria-label="Facebook de Sonricks Store">Facebook</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="site-footer__legal">© 2026 Sonricks Store. Todos los derechos reservados.</p>
+  </footer>
+
+  <!-- Mismo script que el resto del sitio: detecta que no hay #authModal
+       y monta el formulario en modo página independiente -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
