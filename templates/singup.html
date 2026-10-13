@@ -1,0 +1,13 @@
+{% extends  'layout.html' %}
+{% block titulo%} sonricksstore | Gracias por registrarte {% endblock %}
+{% block contenido %}
+<div class="container">
+ <form action="/singup" method="post" class="modal-form" id="modalform">"
+    <input type="email" name="nombre" placeholder="correo electronico" required>
+    <input type="password" placeholder="contraseña" required>
+    <button type="submit" class="btn-accent">confirmar</button>
+</form>
+</div>
+
+{% endblock %}
+

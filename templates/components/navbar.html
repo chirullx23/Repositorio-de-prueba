@@ -22,5 +22,10 @@
       <li><a href="{{ url_for('home') }}#contacto">Contacto</a></li>
     </ul>
 
+    <div class="nav__auth">
+      <button type="button" class="btn btn--fantasma btn--nav-auth" id="btnLogin" data-modal-open="authModalLogin">Iniciar sesión</button>
+      <button type="button" class="btn btn--acento btn--nav-auth" id="btnRegistro" data-modal-open="authModalRegistro">Registro</button>
+    </div>
+
     <a href="{{ url_for('home') }}#productos" class="btn btn--acento nav__cta">Comprar ahora</a>
   </nav>
