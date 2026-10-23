@@ -1,0 +1,37 @@
+ <nav class="nav nav--admin" aria-label="Navegación de administrador">
+    <a href="{{ url_for('admin_dashboard') }}" class="nav__logo" aria-label="Sonricks Store, panel de administrador">
+      <svg class="logo-svg" viewBox="0 0 64 64" role="img" aria-label="Logotipo Sonricks Store" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+        <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+        <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="nav__brand">Sonricks<span class="nav__brand-accent">Store</span></span>
+      <span class="nav__badge-admin">Admin</span>
+    </a>
+
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenuAdmin" aria-label="Abrir menú de navegación">
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+    </button>
+
+    <ul class="nav__menu" id="navMenuAdmin">
+      <li><a href="{{ url_for('admin_dashboard') }}">Panel</a></li>
+      <li><a href="{{ url_for('admin_productos') }}">Productos</a></li>
+      <li><a href="{{ url_for('admin_rubros') }}">Rubros</a></li>
+      <li><a href="{{ url_for('admin_pedidos') }}">Pedidos</a></li>
+      <li><a href="{{ url_for('admin_usuarios') }}">Usuarios</a></li>
+    </ul>
+
+    <div class="nav__cuenta">
+      <button type="button" class="nav__cuenta-btn" id="btnCuentaAdmin" aria-expanded="false" aria-controls="menuCuentaAdmin">
+        <span class="nav__cuenta-avatar nav__cuenta-avatar--admin" aria-hidden="true">{{ (current_user.nombre[0] | upper) if current_user.is_authenticated else "A" }}</span>
+        <span class="nav__cuenta-nombre">{{ current_user.nombre if current_user.is_authenticated else "Administrador" }}</span>
+        <svg class="nav__dropdown-caret" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <ul class="nav__dropdown-menu nav__dropdown-menu--derecha" id="menuCuentaAdmin">
+        <li><a href="{{ url_for('home') }}">Ver tienda</a></li>
+        <li><a href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </nav>

@@ -1,0 +1,52 @@
+ <nav class="nav" aria-label="Navegación principal">
+    <a href="{{ url_for('home') }}#inicio" class="nav__logo" aria-label="Sonricks Store, ir al inicio">
+      <svg class="logo-svg" viewBox="0 0 64 64" role="img" aria-label="Logotipo Sonricks Store" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" stroke-width="3"/>
+        <polygon points="32,16 41,23 37,34 27,34 23,23" fill="currentColor"/>
+        <path d="M32 16 L32 6 M41 23 L52 19 M37 34 L44 46 M27 34 L20 46 M23 23 L12 19" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="nav__brand">Sonricks<span class="nav__brand-accent">Store</span></span>
+    </a>
+
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navMenuUser" aria-label="Abrir menú de navegación">
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+      <span class="nav__toggle-bar"></span>
+    </button>
+
+    <ul class="nav__menu" id="navMenuUser">
+      <li><a href="{{ url_for('home') }}#inicio">Inicio</a></li>
+
+      <!-- Si tu ruta pasa una lista `rubros` (con .id y .nombre) a la plantilla,
+           aquí se listan automáticamente. Si no existe, muestra "Ver todo". -->
+      <li class="nav__dropdown">
+        <button type="button" class="nav__dropdown-btn" id="btnRubros" aria-expanded="false" aria-controls="menuRubros">
+          Categorías
+          <svg class="nav__dropdown-caret" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="nav__dropdown-menu" id="menuRubros">
+          {% for rubro in rubros %}
+          <li><a href="{{ url_for('productos_por_rubro', id_rubro=rubro.id) }}">{{ rubro.nombre }}</a></li>
+          {% else %}
+          <li><a href="{{ url_for('home') }}#productos">Ver todo</a></li>
+          {% endfor %}
+        </ul>
+      </li>
+
+      <li><a href="{{ url_for('home') }}#beneficios">Beneficios</a></li>
+      <li><a href="{{ url_for('home') }}#contacto">Contacto</a></li>
+    </ul>
+
+    <div class="nav__cuenta">
+      <button type="button" class="nav__cuenta-btn" id="btnCuenta" aria-expanded="false" aria-controls="menuCuenta">
+        <span class="nav__cuenta-avatar" aria-hidden="true">{{ (current_user.nombre[0] | upper) if current_user.is_authenticated else "?" }}</span>
+        <span class="nav__cuenta-nombre">{{ current_user.nombre if current_user.is_authenticated else "Mi cuenta" }}</span>
+        <svg class="nav__dropdown-caret" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <ul class="nav__dropdown-menu nav__dropdown-menu--derecha" id="menuCuenta">
+        <li><a href="{{ url_for('perfil') }}">Mi perfil</a></li>
+        <li><a href="{{ url_for('mis_pedidos') }}">Mis pedidos</a></li>
+        <li><a href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </nav>
