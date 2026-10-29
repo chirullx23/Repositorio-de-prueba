@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block titulo %}sonricksstore | Usuarios{% endblock %}
+{% block contenido %}
+
+  <section class="admin-panel" id="panelUsuarios">
+    <div class="section__intro">
+      <p class="eyebrow">Panel de administrador</p>
+      <h1>Usuarios registrados</h1>
+    </div>
+
+    <div class="admin-tabla__wrap">
+      <table class="admin-tabla">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Perfil</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <th scope="row">{{ u[0] }}</th>
+            <td>{{ u[1] }}</td>
+            <td>{{ u[2] }}</td>
+            <td>{{ "Administrador" if u[4] == "A" else "Cliente" }}</td>
+            <td class="admin-tabla__acciones">
+              <a href="{{ url_for('admin_usuario_editar', id_usuario=u[0]) }}" class="btn btn--pequeno">Editar</a>
+              <form action="{{ url_for('admin_usuario_eliminar', id_usuario=u[0]) }}" method="post" class="admin-tabla__form-eliminar" onsubmit="return confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.');">
+                <button type="submit" class="btn btn--pequeno btn--peligro">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">Todavía no hay usuarios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+{% endblock %}

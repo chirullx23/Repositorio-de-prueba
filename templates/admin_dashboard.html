@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block titulo %}sonricksstore | Panel de administrador{% endblock %}
+{% block contenido %}
+
+  <section class="admin-panel" id="panelAdmin">
+    <div class="section__intro">
+      <p class="eyebrow">Panel de administrador</p>
+      <h1>Bienvenido, {{ current_user.nombre }}</h1>
+    </div>
+
+    <div class="admin-panel__grid">
+      <a href="{{ url_for('admin_usuarios') }}" class="admin-panel__card">
+        <h3>Usuarios</h3>
+        <p>Gestiona las cuentas registradas en la tienda.</p>
+      </a>
+      <a href="{{ url_for('admin_productos') }}" class="admin-panel__card">
+        <h3>Productos</h3>
+        <p>Administra el catálogo de balones.</p>
+      </a>
+      <a href="{{ url_for('admin_rubros') }}" class="admin-panel__card">
+        <h3>Rubros</h3>
+        <p>Organiza las categorías de productos.</p>
+      </a>
+      <a href="{{ url_for('admin_pedidos') }}" class="admin-panel__card">
+        <h3>Pedidos</h3>
+        <p>Revisa y da seguimiento a los pedidos realizados.</p>
+      </a>
+    </div>
+  </section>
+
+{% endblock %}

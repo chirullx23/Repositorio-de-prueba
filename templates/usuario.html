@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block titulo %}sonricksstore | Mi usuario{% endblock %}
+{% block contenido %}
+
+  <!-- ===================== ENCABEZADO DEL PERFIL ===================== -->
+  <section class="perfil-hero" id="miUsuario">
+    <div class="perfil-hero__inner">
+      <div class="perfil-hero__avatar" aria-hidden="true">{{ current_user.nombre[0] | upper }}</div>
+
+      <div class="perfil-hero__texto">
+        <p class="eyebrow eyebrow--claro">Mi cuenta · Temporada 2026</p>
+        <h1>Hola, <span class="perfil-hero__titulo-acento">{{ current_user.nombre.split(' ')[0] }}</span>.</h1>
+        <span class="perfil-hero__rol">{{ "Administrador" if current_user.perfil == "A" else "Cliente" }}</span>
+      </div>
+
+      <div class="perfil-hero__acciones">
+        <a href="{{ url_for('home') }}#productos" class="btn btn--acento">Ver catálogo</a>
+        {% if current_user.perfil == "A" %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn--fantasma-claro">Panel admin</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="stitch-divider" aria-hidden="true"></div>
+
+  <!-- ===================== FORMULARIOS ===================== -->
+  <section class="perfil-grid">
+
+    <form action="{{ url_for('usuario') }}" method="post" class="perfil-card" novalidate>
+      <span class="perfil-card__tag">Mis datos</span>
+      <input type="hidden" name="accion" value="datos">
+      <h3>Tus datos</h3>
+      <p class="perfil-card__desc">Así te vemos en Sonricks Store.</p>
+
+      <div class="auth-form__campo">
+        <label for="perfilNombre">Nombre completo</label>
+        <input type="text" id="perfilNombre" name="nombre" value="{{ current_user.nombre }}" required minlength="2" autocomplete="name">
+      </div>
+
+      <div class="auth-form__campo">
+        <label for="perfilCorreo">Correo electrónico</label>
+        <input type="email" id="perfilCorreo" name="correo" value="{{ current_user.correo }}" required autocomplete="email">
+      </div>
+
+      <button type="submit" class="btn btn--primario">Guardar cambios</button>
+    </form>
+
+    <form action="{{ url_for('usuario') }}" method="post" class="perfil-card" novalidate>
+      <span class="perfil-card__tag">Seguridad</span>
+      <input type="hidden" name="accion" value="clave">
+      <h3>Cambiar contraseña</h3>
+      <p class="perfil-card__desc">Te pedimos la actual para confirmar que eres tú.</p>
+
+      <div class="auth-form__campo">
+        <label for="claveActual">Contraseña actual</label>
+        <input type="password" id="claveActual" name="clave_actual" required autocomplete="current-password">
+      </div>
+
+      <div class="auth-form__campo">
+        <label for="claveNueva">Contraseña nueva</label>
+        <input type="password" id="claveNueva" name="clave_nueva" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+      </div>
+
+      <button type="submit" class="btn btn--primario">Actualizar contraseña</button>
+    </form>
+    
+
+  </section>
+
+{% endblock %}

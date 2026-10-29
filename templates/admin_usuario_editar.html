@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block titulo %}sonricksstore | Editar usuario{% endblock %}
+{% block contenido %}
+
+  <section class="admin-panel" id="panelEditarUsuario">
+    <div class="section__intro">
+      <p class="eyebrow">Panel de administrador</p>
+      <h1>Editar usuario</h1>
+    </div>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+        <div class="flash-mensajes">
+          {% for categoria, mensaje in mensajes %}
+            <p class="flash-mensaje flash-mensaje--{{ categoria }}">{{ mensaje }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('admin_usuario_editar', id_usuario=usuario[0]) }}" method="post" class="auth-form admin-panel__form" novalidate>
+      <div class="auth-form__campo">
+        <label for="editNombre">Nombre completo</label>
+        <input type="text" id="editNombre" name="nombre" value="{{ usuario[1] }}" required minlength="2">
+      </div>
+
+      <div class="auth-form__campo">
+        <label for="editCorreo">Correo electrónico</label>
+        <input type="email" id="editCorreo" name="correo" value="{{ usuario[2] }}" required>
+      </div>
+
+      <div class="auth-form__campo">
+        <label for="editPerfil">Perfil</label>
+        <select id="editPerfil" name="perfil" required>
+          <option value="C" {% if usuario[4] == "C" %}selected{% endif %}>Cliente</option>
+          <option value="A" {% if usuario[4] == "A" %}selected{% endif %}>Administrador</option>
+        </select>
+      </div>
+
+      <div class="admin-panel__form-acciones">
+        <button type="submit" class="btn btn--primario">Guardar cambios</button>
+        <a href="{{ url_for('admin_usuarios') }}" class="btn btn--fantasma">Cancelar</a>
+      </div>
+    </form>
+  </section>
+
+{% endblock %}

@@ -69,3 +69,73 @@ def logout():
 
 if __name__ == "__main__":
     sonricksstoreApp.run(debug=True, port=3550)
+
+def admin_requerido(func):
+    """Protege una ruta para que solo usuarios con perfil 'A' (admin) entren."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.perfil != "A":
+            flash("No tienes permisos de administrador.", "error")
+            return redirect(url_for("home"))
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@sonricksstoreApp.route("/admin")
+@login_required
+@admin_requerido
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
+
+
+@sonricksstoreApp.route("/admin/usuarios")
+@login_required
+@admin_requerido
+def admin_usuarios():
+    usuarios = ModelUser().get_all(db)
+    return render_template("admin_usuarios.html", usuarios=usuarios)
+
+
+@sonricksstoreApp.route("/admin/usuarios/<int:id_usuario>/eliminar", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_usuario_eliminar(id_usuario):
+    # Evita que el admin se elimine a sí mismo sin querer
+    if id_usuario == current_user.id:
+        flash("No puedes eliminar tu propia cuenta desde aquí.", "error")
+        return redirect(url_for("admin_usuarios"))
+
+    ModelUser().eliminar(db, id_usuario)
+    flash("Usuario eliminado.", "exito")
+    return redirect(url_for("admin_usuarios"))
+
+
+@sonricksstoreApp.route("/admin/usuarios/<int:id_usuario>/editar", methods=["GET", "POST"])
+@login_required
+@admin_requerido
+def admin_usuario_editar(id_usuario):
+    if request.method == "POST":
+        nombre = request.form.get("nombre", "").strip()
+        correo = request.form.get("correo", "").strip()
+        perfil = request.form.get("perfil", "C")
+
+        if not nombre or not correo:
+            flash("Nombre y correo son obligatorios.", "error")
+            return redirect(url_for("admin_usuario_editar", id_usuario=id_usuario))
+
+        ModelUser().actualizar(db, id_usuario, nombre, correo, perfil)
+        flash("Usuario actualizado.", "exito")
+        return redirect(url_for("admin_usuarios"))
+
+    # GET: mostrar el formulario con los datos actuales
+    usuario = ModelUser().get_by_id(db, id_usuario)
+    if usuario is None:
+        flash("Ese usuario no existe.", "error")
+        return redirect(url_for("admin_usuarios"))
+
+    # get_by_id regresa un objeto User; el template espera una tupla como
+    # la que regresa get_all, así que la armamos aquí para reusar el mismo template
+    usuario_tupla = (usuario.id, usuario.nombre, usuario.correo, usuario.clave, usuario.perfil)
+    return render_template("admin_usuario_editar.html", usuario=usuario_tupla)
+
+

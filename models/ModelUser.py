@@ -46,3 +46,31 @@ class ModelUser():
                 return None
         except Exception as ex:
             raise Exception(ex)
+
+    def get_all(self, db):
+        try:
+            selUsuarios = db.connection.cursor()
+            selUsuarios.execute("SELECT * FROM usuario ORDER BY id")
+            return selUsuarios.fetchall()
+        except Exception as ex:
+            raise Exception(ex)
+
+    def eliminar(self, db, id):
+        try:
+            delUsuario = db.connection.cursor()
+            delUsuario.execute("DELETE FROM usuario WHERE id = %s", (id,))
+            db.connection.commit()
+        except Exception as ex:
+            raise Exception(ex)
+    
+    def actualizar(self, db, id, nombre, correo, perfil):
+        try:
+            updUsuario = db.connection.cursor()
+            updUsuario.execute(
+                "UPDATE usuario SET nombre = %s, correo = %s, perfil = %s WHERE id = %s",
+                (nombre, correo, perfil, id)
+            )
+            db.connection.commit()
+        except Exception as ex:
+            raise Exception(ex)
+
