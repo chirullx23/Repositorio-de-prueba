@@ -2,6 +2,8 @@ from werkzeug.security import generate_password_hash
 from models.entities.User import User
 
 class ModelUser():
+
+    # ---------- Sesión ----------
     def signin(self, db, usuario):
         try:
             selUsuario = db.connection.cursor()
@@ -47,6 +49,7 @@ class ModelUser():
         except Exception as ex:
             raise Exception(ex)
 
+    # ---------- Panel de administrador ----------
     def get_all(self, db):
         try:
             selUsuarios = db.connection.cursor()
@@ -55,14 +58,6 @@ class ModelUser():
         except Exception as ex:
             raise Exception(ex)
 
-    def eliminar(self, db, id):
-        try:
-            delUsuario = db.connection.cursor()
-            delUsuario.execute("DELETE FROM usuario WHERE id = %s", (id,))
-            db.connection.commit()
-        except Exception as ex:
-            raise Exception(ex)
-    
     def actualizar(self, db, id, nombre, correo, perfil):
         try:
             updUsuario = db.connection.cursor()
@@ -74,3 +69,34 @@ class ModelUser():
         except Exception as ex:
             raise Exception(ex)
 
+    def eliminar(self, db, id):
+        try:
+            delUsuario = db.connection.cursor()
+            delUsuario.execute("DELETE FROM usuario WHERE id = %s", (id,))
+            db.connection.commit()
+        except Exception as ex:
+            raise Exception(ex)
+
+    # ---------- Página users (cada quien edita lo suyo) ----------
+    def actualizar_perfil(self, db, id, nombre, correo):
+        try:
+            updUsuario = db.connection.cursor()
+            updUsuario.execute(
+                "UPDATE usuario SET nombre = %s, correo = %s WHERE id = %s",
+                (nombre, correo, id)
+            )
+            db.connection.commit()
+        except Exception as ex:
+            raise Exception(ex)
+
+    def cambiar_clave(self, db, id, claveNueva):
+        try:
+            claveCifrada = generate_password_hash(claveNueva)
+            updClave = db.connection.cursor()
+            updClave.execute(
+                "UPDATE usuario SET clave = %s WHERE id = %s",
+                (claveCifrada, id)
+            )
+            db.connection.commit()
+        except Exception as ex:
+            raise Exception(ex)
