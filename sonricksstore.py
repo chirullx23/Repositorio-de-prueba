@@ -154,15 +154,31 @@ def admin_dashboard():
     return flask.render_template("admin_dashboard.html")
 
 
-@sonricksstoreApp.route("/admin/usuarios")
+@sonricksstoreApp.route("/admin/users")
 @login_required
 @admin_requerido
-def admin_usuarios():
-    usuarios = ModelUser().get_all(db)
-    return flask.render_template("admin_usuarios.html", usuarios=usuarios)
+def admin_users():
+    todos = ModelUser().get_all(db)
+
+    # Resumen sobre todos los usuarios (aunque haya una búsqueda activa)
+    total    = len(todos)
+    admins   = sum(1 for u in todos if u[4] == "A")
+    clientes = total - admins
+
+    # Búsqueda opcional por nombre o correo:  /admin/users?q=ana
+    q = flask.request.args.get("q", "").strip()
+    usuarios = todos
+    if q:
+        q_min = q.lower()
+        usuarios = [u for u in todos if q_min in u[1].lower() or q_min in u[2].lower()]
+
+    return flask.render_template(
+        "admin_users.html",
+        usuarios=usuarios, q=q, total=total, admins=admins, clientes=clientes
+    )
 
 
-@sonricksstoreApp.route("/admin/usuarios/<int:id_usuario>/editar", methods=["GET", "POST"])
+@sonricksstoreApp.route("/admin/users/<int:id_usuario>/editar", methods=["GET", "POST"])
 @login_required
 @admin_requerido
 def admin_usuario_editar(id_usuario):
@@ -184,13 +200,13 @@ def admin_usuario_editar(id_usuario):
             return flask.redirect(flask.url_for("admin_usuario_editar", id_usuario=id_usuario))
 
         flask.flash("Usuario actualizado.", "exito")
-        return flask.redirect(flask.url_for("admin_usuarios"))
+        return flask.redirect(flask.url_for("admin_users"))
 
     # GET: mostrar el formulario con los datos actuales
     usuario = ModelUser().get_by_id(db, id_usuario)
     if usuario is None:
         flask.flash("Ese usuario no existe.", "error")
-        return flask.redirect(flask.url_for("admin_usuarios"))
+        return flask.redirect(flask.url_for("admin_users"))
 
     # get_by_id regresa un objeto User; la plantilla espera una tupla como
     # la que regresa get_all, así que la armamos aquí
@@ -198,18 +214,18 @@ def admin_usuario_editar(id_usuario):
     return flask.render_template("admin_usuario_editar.html", usuario=usuario_tupla)
 
 
-@sonricksstoreApp.route("/admin/usuarios/<int:id_usuario>/eliminar", methods=["POST"])
+@sonricksstoreApp.route("/admin/users/<int:id_usuario>/eliminar", methods=["POST"])
 @login_required
 @admin_requerido
 def admin_usuario_eliminar(id_usuario):
     # Evita que el admin se elimine a sí mismo sin querer
     if id_usuario == current_user.id:
         flask.flash("No puedes eliminar tu propia cuenta desde aquí.", "error")
-        return flask.redirect(flask.url_for("admin_usuarios"))
+        return flask.redirect(flask.url_for("admin_users"))
 
     ModelUser().eliminar(db, id_usuario)
     flask.flash("Usuario eliminado.", "exito")
-    return flask.redirect(flask.url_for("admin_usuarios"))
+    return flask.redirect(flask.url_for("admin_users"))
 
 
 # =========================================================

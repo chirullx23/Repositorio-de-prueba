@@ -1,0 +1,17 @@
+{# =========================================================
+   Encabezado de página con el diseño de Sonricks Store:
+   banda verde oscura + título con acento lima + divisor de "costura".
+   Uso:
+     {% from "components/encabezado_macros.html" import encabezado_pagina %}
+     {{ encabezado_pagina("Panel de administrador", "Usuarios", "registrados", "Texto opcional") }}
+   ========================================================= #}
+{% macro encabezado_pagina(eyebrow, titulo, acento="", descripcion="") %}
+<section class="pagina-hero">
+  <div class="pagina-hero__inner">
+    <p class="eyebrow eyebrow--claro">{{ eyebrow }}</p>
+    <h1>{{ titulo }}{% if acento %} <span class="pagina-hero__acento">{{ acento }}</span>{% endif %}.</h1>
+    {% if descripcion %}<p class="pagina-hero__desc">{{ descripcion }}</p>{% endif %}
+  </div>
+</section>
+<div class="stitch-divider" aria-hidden="true"></div>
+{% endmacro %}

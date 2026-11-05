@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% from "components/usuarios_macros.html" import tabla_usuarios %}
+{% from "components/encabezado_macros.html" import encabezado_pagina %}
+{% block titulo %}sonricksstore | Usuarios registrados{% endblock %}
+{% block contenido %}
+
+  {{ encabezado_pagina("Panel de administrador · Usuarios", "Usuarios", "registrados", "Aquí consultas, editas y eliminas las cuentas guardadas en tu base de datos.") }}
+
+  <section class="admin-panel" id="panelUsuarios">
+
+    <!-- Resumen -->
+    <div class="admin-stats admin-stats--sin-margen">
+      <div class="admin-stats__item"><span class="admin-stats__num">{{ total }}</span><span class="admin-stats__txt">Usuarios</span></div>
+      <div class="admin-stats__item"><span class="admin-stats__num">{{ admins }}</span><span class="admin-stats__txt">Administradores</span></div>
+      <div class="admin-stats__item"><span class="admin-stats__num">{{ clientes }}</span><span class="admin-stats__txt">Clientes</span></div>
+    </div>
+
+    <!-- Buscador -->
+    <form action="{{ url_for('admin_users') }}" method="get" class="admin-buscador" role="search">
+      <label for="buscarUsuario" class="visually-hidden">Buscar por nombre o correo</label>
+      <input type="search" id="buscarUsuario" name="q" value="{{ q }}" placeholder="Buscar por nombre o correo">
+      <button type="submit" class="btn btn--primario">Buscar</button>
+      {% if q %}<a href="{{ url_for('admin_users') }}" class="btn btn--fantasma">Limpiar</a>{% endif %}
+    </form>
+
+    {% if q %}
+    <p class="admin-buscador__resultado">{{ usuarios|length }} resultado(s) para «{{ q }}»</p>
+    {% endif %}
+
+    {{ tabla_usuarios(usuarios, current_user.id, acciones=true) }}
+  </section>
+
+{% endblock %}

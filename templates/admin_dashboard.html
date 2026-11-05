@@ -1,30 +1,41 @@
 {% extends "layout.html" %}
+{% from "components/encabezado_macros.html" import encabezado_pagina %}
 {% block titulo %}sonricksstore | Panel de administrador{% endblock %}
 {% block contenido %}
 
-  <section class="admin-panel" id="panelAdmin">
-    <div class="section__intro">
-      <p class="eyebrow">Panel de administrador</p>
-      <h1>Bienvenido, {{ current_user.nombre }}</h1>
-    </div>
+  {{ encabezado_pagina("Panel de administrador · Temporada 2026", "Hola,", current_user.nombre.split(' ')[0], "Desde aquí controlas todo lo que pasa en Sonricks Store.") }}
 
-    <div class="admin-panel__grid">
-      <a href="{{ url_for('admin_usuarios') }}" class="admin-panel__card">
-        <h3>Usuarios</h3>
-        <p>Gestiona las cuentas registradas en la tienda.</p>
+  <section class="admin-panel" id="panelAdmin">
+    <div class="admin-panel__grid admin-panel__grid--sin-margen">
+
+      <a href="{{ url_for('admin_users') }}" class="admin-card">
+        <span class="admin-card__tag">Usuarios</span>
+        <span class="admin-card__icono" aria-hidden="true">👥</span>
+        <h3>Usuarios registrados</h3>
+        <p>Consulta, edita y elimina las cuentas de la tienda.</p>
       </a>
-      <a href="{{ url_for('admin_productos') }}" class="admin-panel__card">
+
+      <a href="{{ url_for('admin_productos') }}" class="admin-card">
+        <span class="admin-card__tag">Catálogo</span>
+        <span class="admin-card__icono" aria-hidden="true">⚽</span>
         <h3>Productos</h3>
         <p>Administra el catálogo de balones.</p>
       </a>
-      <a href="{{ url_for('admin_rubros') }}" class="admin-panel__card">
+
+      <a href="{{ url_for('admin_rubros') }}" class="admin-card">
+        <span class="admin-card__tag">Categorías</span>
+        <span class="admin-card__icono" aria-hidden="true">🏷️</span>
         <h3>Rubros</h3>
         <p>Organiza las categorías de productos.</p>
       </a>
-      <a href="{{ url_for('admin_pedidos') }}" class="admin-panel__card">
+
+      <a href="{{ url_for('admin_pedidos') }}" class="admin-card">
+        <span class="admin-card__tag">Ventas</span>
+        <span class="admin-card__icono" aria-hidden="true">📦</span>
         <h3>Pedidos</h3>
         <p>Revisa y da seguimiento a los pedidos realizados.</p>
       </a>
+
     </div>
   </section>
 

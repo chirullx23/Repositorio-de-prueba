@@ -1,0 +1,53 @@
+{# =========================================================
+   Piezas reutilizables para mostrar usuarios.
+   Se usan con:
+     {% from "components/usuarios_macros.html" import tabla_usuarios, etiqueta_rol %}
+   ========================================================= #}
+
+{# Etiqueta de color según el perfil: A = Administrador, C = Cliente #}
+{% macro etiqueta_rol(perfil) -%}
+<span class="usuario-rol usuario-rol--{{ 'admin' if perfil == 'A' else 'cliente' }}">{{ "Administrador" if perfil == "A" else "Cliente" }}</span>
+{%- endmacro %}
+
+{# Tabla de usuarios.
+   usuarios  -> lista de filas (id, nombre, correo, clave, perfil), como la de ModelUser.get_all
+   id_actual -> id del usuario con sesión: su fila se resalta con la marca "Tú"
+   acciones  -> True agrega los botones Editar / Eliminar (solo para el panel de admin) #}
+{% macro tabla_usuarios(usuarios, id_actual=none, acciones=false) %}
+<div class="admin-tabla__wrap">
+  <table class="admin-tabla">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Correo</th>
+        <th>Perfil</th>
+        {% if acciones %}<th>Acciones</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      {% set soy_yo = (id_actual is not none and u[0] == id_actual) %}
+      <tr class="{{ 'admin-tabla__fila-yo' if soy_yo else '' }}">
+        <th scope="row">{{ u[0] }}</th>
+        <td>{{ u[1] }}{% if soy_yo %} <span class="admin-tabla__yo">Tú</span>{% endif %}</td>
+        <td>{{ u[2] }}</td>
+        <td>{{ etiqueta_rol(u[4]) }}</td>
+        {% if acciones %}
+        <td class="admin-tabla__acciones">
+          <a href="{{ url_for('admin_usuario_editar', id_usuario=u[0]) }}" class="btn btn--pequeno">Editar</a>
+          {% if not soy_yo %}
+          <form action="{{ url_for('admin_usuario_eliminar', id_usuario=u[0]) }}" method="post" class="admin-tabla__form-eliminar" onsubmit="return confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.');">
+            <button type="submit" class="btn btn--pequeno btn--peligro">Eliminar</button>
+          </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ 5 if acciones else 4 }}">Todavía no hay usuarios registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
