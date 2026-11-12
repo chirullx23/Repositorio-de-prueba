@@ -1,3 +1,4 @@
+import os
 import flask
 from functools import wraps
 from flask_mysqldb import MySQL
@@ -42,7 +43,25 @@ def admin_requerido(func):
 
 @sonricksstoreApp.route("/")
 def home():
-    return flask.render_template("home.html")
+    # Lee los balones de la tabla `balon` y se queda solo con los que
+    # tienen su archivo de imagen dentro de static/img/
+    cur = db.connection.cursor()
+    cur.execute(
+        "SELECT balon, nombre, marca, categoria, precio, existencias, imagen "
+        "FROM balon ORDER BY categoria, nombre"
+    )
+    columnas = [c[0] for c in cur.description]
+    filas    = cur.fetchall()
+    cur.close()
+
+    balones = []
+    for fila in filas:
+        b = dict(zip(columnas, fila))
+        ruta = os.path.join(sonricksstoreApp.static_folder, "img", b["imagen"])
+        if os.path.isfile(ruta):
+            balones.append(b)
+
+    return flask.render_template("home.html", balones=balones)
 
 
 # =========================================================

@@ -26,7 +26,40 @@
 
   <div class="stitch-divider" aria-hidden="true"></div>
 
-
+  <!-- ===================== CATÁLOGO (desde la base de datos) ===================== -->
+  <section class="catalogo" id="productos">
+    <div class="container py-5">
+      <div class="section__intro">
+        <p class="eyebrow">Catálogo</p>
+        <h2>Nuestros balones</h2>
+      </div>
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for b in balones %}
+        <div class="col">
+          <div class="card h-100">
+            <img src="{{ url_for('static', filename='img/' ~ b.imagen) }}"
+                 class="card-img-top" alt="{{ b.nombre }}"
+                 style="height: 280px; object-fit: cover;">
+            <div class="card-body">
+              <h5 class="card-title">{{ b.nombre }}</h5>
+              <p class="card-text text-body-secondary mb-2">{{ b.marca }} · {{ b.categoria }}</p>
+              <p class="card-text fs-5 fw-bold mb-0">${{ "{:,.2f}".format(b.precio) }}</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+              {% if b.existencias > 0 %}
+                <small class="text-body-secondary">{{ b.existencias }} disponibles</small>
+              {% else %}
+                <span class="badge text-bg-secondary">Agotado</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <p>No hay balones disponibles por ahora.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
 
   <!-- ===================== BENEFICIOS ===================== -->
   <section class="beneficios" id="beneficios">
