@@ -99,7 +99,7 @@ def signup():
 
     usuario = User(0, nombre, correo, clave, "")
     resultado = ModelUser().signup(db, usuario)
-
+    
     if resultado is not None:
         flask.flash("¡Cuenta creada! Ya puedes iniciar sesión.", "exito")
         return flask.redirect(flask.url_for("home", auth="login"))
