@@ -1,16 +1,20 @@
 import os
+import traceback
 import flask
 from functools import wraps
 from flask_mysqldb import MySQL
+from flask_mail import Mail, Message
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import config
 from models.entities.User import User
 from models.ModelUser import ModelUser
 
 sonricksstoreApp = flask.Flask(__name__)
-db               = MySQL(sonricksstoreApp)
 adminUsuarios    = LoginManager(sonricksstoreApp)
 sonricksstoreApp.config.from_object(config['development'])
+sonricksstoreApp.config.from_object(config['mail'])
+db               = MySQL(sonricksstoreApp)
+mail             = Mail(sonricksstoreApp)   # va DESPUÉS de cargar la config (lee MAIL_*)
 
 
 @adminUsuarios.user_loader
@@ -35,6 +39,30 @@ def admin_requerido(func):
             return flask.redirect(flask.url_for("home"))
         return func(*args, **kwargs)
     return wrapper
+
+
+def enviar_correo_bienvenida(nombre, correo):
+    """Manda el correo de bienvenida. Regresa True si se envió, False si falló.
+    Si falla (sin internet, credenciales mal, etc.) el registro NO se cancela;
+    el motivo exacto se imprime en la terminal."""
+    usuario_smtp = sonricksstoreApp.config.get("MAIL_USERNAME", "")
+    clave_smtp   = sonricksstoreApp.config.get("MAIL_PASSWORD", "")
+    if usuario_smtp.startswith("TU_") or clave_smtp.startswith("TU_"):
+        print("CORREO NO ENVIADO: falta poner tu correo y tu contraseña de "
+    "aplicación en config.py (MailConfig).")
+        return False
+
+    try:
+        msg = Message(subject="Bienvenido a Sonricks Store", recipients=[correo])
+        msg.body = (f"Hola {nombre}, tu cuenta en Sonricks Store ya está lista. "
+                    "¡Gracias por registrarte!")
+        msg.html = flask.render_template("user_mail.html", nombre=nombre)
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print("CORREO NO ENVIADO:", type(e).__name__, "-", e)
+        traceback.print_exc()
+        return False
 
 
 # =========================================================
@@ -99,9 +127,12 @@ def signup():
 
     usuario = User(0, nombre, correo, clave, "")
     resultado = ModelUser().signup(db, usuario)
-    
+
     if resultado is not None:
-        flask.flash("¡Cuenta creada! Ya puedes iniciar sesión.", "exito")
+        if enviar_correo_bienvenida(nombre, correo):
+            flask.flash("¡Cuenta creada! Te enviamos un correo de bienvenida. Ya puedes iniciar sesión.", "exito")
+        else:
+            flask.flash("¡Cuenta creada! Ya puedes iniciar sesión (no pudimos enviar el correo de bienvenida).", "exito")
         return flask.redirect(flask.url_for("home", auth="login"))
 
     flask.flash("Ese correo ya está registrado. Intenta iniciar sesión.", "error")
