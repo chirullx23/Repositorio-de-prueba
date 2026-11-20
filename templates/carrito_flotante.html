@@ -1,0 +1,118 @@
+{# Botón flotante en la esquina + panel lateral del carrito.
+   Funciona solo (CSS y JS propios, no necesita Bootstrap JS).
+   Usa carrito_items / carrito_total / carrito_cantidad que da sonricksstore.py #}
+<style>
+  .cf-boton{position:fixed;right:24px;bottom:24px;z-index:1040;width:60px;height:60px;border:0;border-radius:50%;
+    background:#0b1a33;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center}
+  .cf-boton:hover{background:#13294f}
+  .cf-badge{position:absolute;top:-4px;right:-4px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;
+    background:#c6f432;color:#0b1a33;font:700 13px/24px Arial,sans-serif;text-align:center}
+  .cf-fondo{position:fixed;inset:0;z-index:1049;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:.25s}
+  .cf-fondo.abierto{opacity:1;visibility:visible}
+  .cf-panel{position:fixed;top:0;right:0;bottom:0;z-index:1050;width:400px;max-width:100%;background:#fff;color:#0b1a33;
+    display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s;box-shadow:-8px 0 24px rgba(0,0,0,.25)}
+  .cf-panel.abierto{transform:translateX(0)}
+  .cf-cab{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e5e7eb}
+  .cf-cab h3{margin:0;font-size:20px}
+  .cf-x{border:0;background:none;font-size:22px;cursor:pointer;color:#0b1a33}
+  .cf-lista{flex:1;overflow-y:auto;padding:8px 20px}
+  .cf-vacio{text-align:center;color:#6b7280;margin-top:48px}
+  .cf-item{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid #f0f1f3}
+  .cf-item img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none}
+  .cf-info{flex:1;min-width:0}
+  .cf-nombre{margin:0 0 2px;font-size:14px;font-weight:600;line-height:1.3}
+  .cf-precio{margin:0 0 8px;font-size:13px;color:#6b7280}
+  .cf-cant{display:flex;align-items:center;gap:8px}
+  .cf-cant form,.cf-item>form{margin:0}
+  .cf-mas,.cf-menos{width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;line-height:1}
+  .cf-mas:hover,.cf-menos:hover{background:#f1f5f9}
+  .cf-sub{font-weight:700;font-size:14px;white-space:nowrap}
+  .cf-quitar{border:0;background:none;color:#b91c1c;cursor:pointer;font-size:18px}
+  .cf-pie{padding:16px 20px;border-top:1px solid #e5e7eb;display:grid;gap:10px}
+  .cf-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700}
+  .cf-btn{display:block;width:100%;padding:12px;border:0;border-radius:8px;background:#c6f432;color:#0b1a33;
+    font-weight:700;text-align:center;text-decoration:none;cursor:pointer;font-size:15px}
+  .cf-btn:hover{filter:brightness(.95)}
+  .cf-btn--claro{background:#fff;border:2px solid #0b1a33}
+  .cf-agregar{width:100%;padding:9px;border:0;border-radius:8px;background:#0b1a33;color:#fff;font-weight:600;cursor:pointer}
+  .cf-agregar:hover{background:#13294f}
+  .cf-agregar:disabled{background:#cbd5e1;cursor:not-allowed}
+</style>
+
+<button type="button" class="cf-boton" id="cfAbrir" aria-label="Abrir carrito">
+  🛒{% if carrito_cantidad %}<span class="cf-badge">{{ carrito_cantidad }}</span>{% endif %}
+</button>
+<div class="cf-fondo" id="cfFondo"></div>
+
+<aside class="cf-panel" id="cfPanel" aria-label="Carrito de compras" aria-hidden="true">
+  <div class="cf-cab">
+    <h3>Tu carrito{% if carrito_cantidad %} ({{ carrito_cantidad }}){% endif %}</h3>
+    <button type="button" class="cf-x" id="cfCerrar" aria-label="Cerrar carrito">✕</button>
+  </div>
+
+  <div class="cf-lista">
+    {% for it in carrito_items %}
+    <div class="cf-item">
+      <img src="{{ url_for('static', filename='img/' ~ it.imagen) }}" alt="{{ it.nombre }}">
+      <div class="cf-info">
+        <p class="cf-nombre">{{ it.nombre }}</p>
+        <p class="cf-precio">${{ "{:,.2f}".format(it.precio) }} c/u</p>
+        <div class="cf-cant">
+          <form method="post" action="{{ url_for('carrito_cambiar', idbalon=it.idbalon) }}">
+            <input type="hidden" name="accion" value="menos"><input type="hidden" name="panel" value="1">
+            <button class="cf-menos" aria-label="Quitar uno">−</button>
+          </form>
+          <strong>{{ it.cantidad }}</strong>
+          <form method="post" action="{{ url_for('carrito_cambiar', idbalon=it.idbalon) }}">
+            <input type="hidden" name="accion" value="mas"><input type="hidden" name="panel" value="1">
+            <button class="cf-mas" aria-label="Agregar uno">+</button>
+          </form>
+          <span class="cf-sub" style="margin-left:auto">${{ "{:,.2f}".format(it.subtotal) }}</span>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('carrito_quitar', idbalon=it.idbalon) }}">
+        <input type="hidden" name="panel" value="1">
+        <button class="cf-quitar" aria-label="Quitar del carrito">🗑</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="cf-vacio">Tu carrito está vacío.<br>Agrega un balón desde el catálogo.</p>
+    {% endfor %}
+  </div>
+
+  {% if carrito_items %}
+  <div class="cf-pie">
+    <div class="cf-total"><span>Total</span><span>${{ "{:,.2f}".format(carrito_total) }}</span></div>
+    {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('carrito_pagar') }}" style="margin:0">
+      <button class="cf-btn">Pagar</button>
+    </form>
+    {% else %}
+    <a class="cf-btn" href="{{ url_for('home', auth='login') }}">Inicia sesión para pagar</a>
+    {% endif %}
+    <a class="cf-btn cf-btn--claro" href="{{ url_for('ver_carrito') }}">Ver carrito completo</a>
+  </div>
+  {% endif %}
+</aside>
+
+<script>
+(function () {
+  var panel = document.getElementById('cfPanel'), fondo = document.getElementById('cfFondo');
+  function abrir()  { panel.classList.add('abierto');    fondo.classList.add('abierto');    panel.setAttribute('aria-hidden', 'false'); }
+  function cerrar() { panel.classList.remove('abierto'); fondo.classList.remove('abierto'); panel.setAttribute('aria-hidden', 'true'); }
+  document.getElementById('cfAbrir').addEventListener('click', abrir);
+  document.getElementById('cfCerrar').addEventListener('click', cerrar);
+  fondo.addEventListener('click', cerrar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrar(); });
+
+  // Después de agregar/cambiar algo, el servidor manda ?carrito=abierto
+  var q = new URLSearchParams(location.search);
+  if (q.get('carrito') === 'abierto') {
+    abrir();
+    q.delete('carrito');
+    var resto = q.toString();
+    history.replaceState(null, '', location.pathname + (resto ? '?' + resto : '') + location.hash);
+  }
+})();
+</script>

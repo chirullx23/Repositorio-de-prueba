@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block titulo %}Mis pedidos — Sonricks Store{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <h1 class="mb-4">Mis pedidos</h1>
+
+  {% for p in pedidos %}
+  <div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+      <strong>Pedido #{{ p.idpedido }}</strong>
+      <span class="text-body-secondary">{% if p.fecha.strftime is defined %}{{ p.fecha.strftime('%d/%m/%Y %H:%M') }}{% else %}{{ p.fecha }}{% endif %}</span>
+      <strong>Total: ${{ "{:,.2f}".format(p.total) }}</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Partida</th>
+            <th>Producto</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-end">Precio unitario</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in p.lineas %}
+          <tr>
+            <td>#{{ l.idcontiene }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <img src="{{ url_for('static', filename='img/' ~ l.imagen) }}" alt="{{ l.nombre }}"
+                     width="48" height="48" style="object-fit:cover;border-radius:6px">
+                {{ l.nombre }}
+              </div>
+            </td>
+            <td class="text-center">{{ l.cantidad }}</td>
+            <td class="text-end">${{ "{:,.2f}".format(l.precio_unitario) }}</td>
+            <td class="text-end">${{ "{:,.2f}".format(l.precio_unitario * l.cantidad) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <p class="fs-5">Todavía no has hecho pedidos.</p>
+    <a class="btn btn-dark" href="{{ url_for('home') }}#productos">Ver catálogo</a>
+  </div>
+  {% endfor %}
+</div>
+
+{% include "components/carrito_flotante.html" %}
+{% endblock %}

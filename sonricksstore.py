@@ -1,6 +1,7 @@
 import os
 import traceback
 import flask
+from urllib.parse import urlparse
 from functools import wraps
 from flask_mysqldb import MySQL
 from flask_mail import Mail, Message
@@ -49,7 +50,7 @@ def enviar_correo_bienvenida(nombre, correo):
     clave_smtp   = sonricksstoreApp.config.get("MAIL_PASSWORD", "")
     if usuario_smtp.startswith("TU_") or clave_smtp.startswith("TU_"):
         print("CORREO NO ENVIADO: falta poner tu correo y tu contraseña de "
-    "aplicación en config.py (MailConfig).")
+        "aplicación en config.py (MailConfig).")
         return False
 
     try:
@@ -279,16 +280,212 @@ def admin_usuario_eliminar(id_usuario):
 
 
 # =========================================================
-#  RUTAS TEMPORALES (los navbars enlazan aquí; se reemplazan
-#  cuando construyamos cada página)
+#  CARRITO DE COMPRAS
+#  - Mientras el usuario compra, el carrito vive en la sesión
+#    (session["carrito"] = {"idbalon": cantidad}).
+#  - Al pagar se guarda en la BD: un registro en `pedido` y una
+#    fila por balón en `contiene` (idpedido, idbalon, cantidad,
+#    precio_unitario). Los precios SIEMPRE se leen de la tabla balon.
 # =========================================================
+
+def leer_carrito():
+    """Regresa (items, total, cantidad_total) con datos frescos de la BD."""
+    carrito = flask.session.get("carrito", {})
+    if not carrito:
+        return [], 0.0, 0
+
+    ids = [int(i) for i in carrito]
+    marcadores = ",".join(["%s"] * len(ids))
+    cur = db.connection.cursor()
+    cur.execute(
+        "SELECT balon, nombre, marca, precio, existencias, imagen "
+        f"FROM balon WHERE balon IN ({marcadores})", ids
+    )
+    filas = cur.fetchall()
+    cur.close()
+
+    items, total, cantidad_total = [], 0.0, 0
+    for idbalon, nombre, marca, precio, existencias, imagen in filas:
+        cantidad = min(int(carrito.get(str(idbalon), 0)), int(existencias))
+        if cantidad <= 0:
+            continue
+        subtotal = round(float(precio) * cantidad, 2)
+        items.append(dict(idbalon=idbalon, nombre=nombre, marca=marca,
+                          precio=float(precio), existencias=int(existencias),
+                          imagen=imagen, cantidad=cantidad, subtotal=subtotal))
+        total += subtotal
+        cantidad_total += cantidad
+    return items, round(total, 2), cantidad_total
+
+
+@sonricksstoreApp.context_processor
+def datos_carrito():
+    """Deja carrito_items / carrito_total / carrito_cantidad disponibles en
+    TODAS las plantillas (para el globito del carrito)."""
+    try:
+        items, total, cantidad = leer_carrito()
+    except Exception:
+        items, total, cantidad = [], 0.0, 0
+    return dict(carrito_items=items, carrito_total=total, carrito_cantidad=cantidad)
+
+
+def _existencias(idbalon):
+    cur = db.connection.cursor()
+    cur.execute("SELECT nombre, existencias FROM balon WHERE balon = %s", (idbalon,))
+    fila = cur.fetchone()
+    cur.close()
+    return fila   # (nombre, existencias) o None
+
+
+def _volver(abrir=False):
+    """Regresa a la página de donde vino el usuario (solo dentro de este sitio).
+    Si abrir=True, el panel del carrito se abre solo al cargar."""
+    destino = flask.url_for("home")
+    ref = flask.request.referrer
+    if ref:
+        u = urlparse(ref)
+        if u.netloc == flask.request.host and u.path:
+            destino = u.path
+    if abrir:
+        destino += "?carrito=abierto"
+    ancla = flask.request.form.get("ancla", "")
+    if ancla.isalnum():
+        destino += "#" + ancla
+    return flask.redirect(destino)
+
+
+@sonricksstoreApp.route("/carrito")
+def ver_carrito():
+    return flask.render_template("carrito.html")
+
+
+@sonricksstoreApp.route("/carrito/agregar/<int:idbalon>", methods=["POST"])
+def carrito_agregar(idbalon):
+    fila = _existencias(idbalon)
+    if fila is None:
+        flask.flash("Ese balón ya no existe.", "error")
+        return _volver()
+
+    nombre, existencias = fila
+    carrito = dict(flask.session.get("carrito", {}))
+    actual = int(carrito.get(str(idbalon), 0))
+    if actual >= existencias:
+        flask.flash(f"Ya tienes en tu carrito todas las existencias de «{nombre}».", "error")
+    else:
+        carrito[str(idbalon)] = actual + 1
+        flask.session["carrito"] = carrito
+    return _volver(abrir=True)
+
+
+@sonricksstoreApp.route("/carrito/cambiar/<int:idbalon>", methods=["POST"])
+def carrito_cambiar(idbalon):
+    accion = flask.request.form.get("accion")
+    carrito = dict(flask.session.get("carrito", {}))
+    clave = str(idbalon)
+
+    if clave in carrito:
+        cantidad = int(carrito[clave]) + (1 if accion == "mas" else -1)
+        if accion == "mas":
+            fila = _existencias(idbalon)
+            if fila is None or cantidad > fila[1]:
+                flask.flash("No hay más existencias de ese balón.", "error")
+                cantidad = int(carrito[clave])
+        if cantidad <= 0:
+            del carrito[clave]
+        else:
+            carrito[clave] = cantidad
+        flask.session["carrito"] = carrito
+
+    return _volver(abrir=flask.request.form.get("panel") == "1")
+
+
+@sonricksstoreApp.route("/carrito/quitar/<int:idbalon>", methods=["POST"])
+def carrito_quitar(idbalon):
+    carrito = dict(flask.session.get("carrito", {}))
+    carrito.pop(str(idbalon), None)
+    flask.session["carrito"] = carrito
+    return _volver(abrir=flask.request.form.get("panel") == "1")
+
+
+@sonricksstoreApp.route("/carrito/vaciar", methods=["POST"])
+def carrito_vaciar():
+    flask.session.pop("carrito", None)
+    return _volver()
+
+
+@sonricksstoreApp.route("/carrito/pagar", methods=["POST"])
+@login_required
+def carrito_pagar():
+    items, total, _ = leer_carrito()
+    if not items:
+        flask.flash("Tu carrito está vacío.", "error")
+        return flask.redirect(flask.url_for("home"))
+
+    cur = db.connection.cursor()
+    try:
+        # Revisa existencias de nuevo (y bloquea las filas) antes de vender
+        for it in items:
+            cur.execute("SELECT existencias FROM balon WHERE balon = %s FOR UPDATE",
+                        (it["idbalon"],))
+            existencias = cur.fetchone()[0]
+            if existencias < it["cantidad"]:
+                raise ValueError(f"Solo quedan {existencias} de «{it['nombre']}».")
+
+        cur.execute("INSERT INTO pedido (idusuario, total) VALUES (%s, %s)",
+                    (current_user.id, total))
+        idpedido = cur.lastrowid
+
+        for it in items:
+            cur.execute(
+                "INSERT INTO contiene (idpedido, idbalon, cantidad, precio_unitario) "
+                "VALUES (%s, %s, %s, %s)",
+                (idpedido, it["idbalon"], it["cantidad"], it["precio"]))
+            cur.execute("UPDATE balon SET existencias = existencias - %s WHERE balon = %s",
+                        (it["cantidad"], it["idbalon"]))
+        db.connection.commit()
+    except ValueError as e:
+        db.connection.rollback()
+        flask.flash(str(e), "error")
+        return flask.redirect(flask.url_for("ver_carrito"))
+    except Exception as e:
+        db.connection.rollback()
+        print("ERROR al guardar el pedido:", type(e).__name__, "-", e)
+        flask.flash("No se pudo guardar tu pedido. Intenta de nuevo.", "error")
+        return flask.redirect(flask.url_for("ver_carrito"))
+    finally:
+        cur.close()
+
+    flask.session.pop("carrito", None)
+    flask.flash(f"¡Pedido #{idpedido} realizado! Gracias por tu compra.", "exito")
+    return flask.redirect(flask.url_for("mis_pedidos"))
+
 
 @sonricksstoreApp.route("/mis-pedidos")
 @login_required
 def mis_pedidos():
-    flask.flash("Mis pedidos todavía está en construcción.", "exito")
-    return flask.redirect(flask.url_for("home"))
+    cur = db.connection.cursor()
+    cur.execute("SELECT idpedido, fecha, total FROM pedido "
+                "WHERE idusuario = %s ORDER BY idpedido DESC", (current_user.id,))
+    cabeceras = cur.fetchall()
 
+    pedidos = []
+    for idpedido, fecha, total in cabeceras:
+        cur.execute(
+            "SELECT c.idcontiene, c.idbalon, b.nombre, b.imagen, c.cantidad, c.precio_unitario "
+            "FROM contiene c JOIN balon b ON b.balon = c.idbalon "
+            "WHERE c.idpedido = %s ORDER BY c.idcontiene", (idpedido,))
+        lineas = [dict(zip(("idcontiene", "idbalon", "nombre", "imagen",
+                            "cantidad", "precio_unitario"), f))
+                  for f in cur.fetchall()]
+        pedidos.append(dict(idpedido=idpedido, fecha=fecha, total=total, lineas=lineas))
+    cur.close()
+    return flask.render_template("mis_pedidos.html", pedidos=pedidos)
+
+
+# =========================================================
+#  RUTAS TEMPORALES (los navbars enlazan aquí; se reemplazan
+#  cuando construyamos cada página)
+# =========================================================
 
 @sonricksstoreApp.route("/rubro/<int:id_rubro>")
 def productos_por_rubro(id_rubro):

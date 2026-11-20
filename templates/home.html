@@ -51,6 +51,12 @@
               {% else %}
                 <span class="badge text-bg-secondary">Agotado</span>
               {% endif %}
+              <form method="post" action="{{ url_for('carrito_agregar', idbalon=b.balon) }}" class="mt-2">
+                <input type="hidden" name="ancla" value="productos">
+                <button type="submit" class="cf-agregar" {% if b.existencias <= 0 %}disabled{% endif %}>
+                  🛒 Agregar al carrito
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -120,5 +126,7 @@
       <p class="oferta__mensaje" id="ofertaMensaje" role="status" aria-live="polite"></p>
     </div>
   </aside>
+
+  {% include "components/carrito_flotante.html" %}
 
 {% endblock %}
