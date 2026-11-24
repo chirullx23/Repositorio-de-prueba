@@ -2,6 +2,7 @@ import os
 import traceback
 import flask
 from urllib.parse import urlparse
+from werkzeug.utils import secure_filename
 from functools import wraps
 from flask_mysqldb import MySQL
 from flask_mail import Mail, Message
@@ -50,7 +51,7 @@ def enviar_correo_bienvenida(nombre, correo):
     clave_smtp   = sonricksstoreApp.config.get("MAIL_PASSWORD", "")
     if usuario_smtp.startswith("TU_") or clave_smtp.startswith("TU_"):
         print("CORREO NO ENVIADO: falta poner tu correo y tu contraseña de "
-        "aplicación en config.py (MailConfig).")
+              "aplicación en config.py (MailConfig).")
         return False
 
     try:
@@ -274,7 +275,12 @@ def admin_usuario_eliminar(id_usuario):
         flask.flash("No puedes eliminar tu propia cuenta desde aquí.", "error")
         return flask.redirect(flask.url_for("admin_users"))
 
-    ModelUser().eliminar(db, id_usuario)
+    try:
+        ModelUser().eliminar(db, id_usuario)
+    except Exception:
+        db.connection.rollback()
+        flask.flash("No se puede eliminar: ese usuario tiene pedidos o productos a su nombre.", "error")
+        return flask.redirect(flask.url_for("admin_users"))
     flask.flash("Usuario eliminado.", "exito")
     return flask.redirect(flask.url_for("admin_users"))
 
@@ -283,9 +289,9 @@ def admin_usuario_eliminar(id_usuario):
 #  CARRITO DE COMPRAS
 #  - Mientras el usuario compra, el carrito vive en la sesión
 #    (session["carrito"] = {"idbalon": cantidad}).
-#  - Al pagar se guarda en la BD: un registro en `pedido` y una
-#    fila por balón en `contiene` (idpedido, idbalon, cantidad,
-#    precio_unitario). Los precios SIEMPRE se leen de la tabla balon.
+#  - Al pagar se guarda en la BD: un registro en `pedido`, otro en
+#    `realiza` (quién lo hizo) y una fila por balón en `contiene`
+#    (idpedido, idbalon, cantidad, precio_unitario). Los precios SIEMPRE se leen de la tabla balon.
 # =========================================================
 
 def leer_carrito():
@@ -431,9 +437,11 @@ def carrito_pagar():
             if existencias < it["cantidad"]:
                 raise ValueError(f"Solo quedan {existencias} de «{it['nombre']}».")
 
-        cur.execute("INSERT INTO pedido (idusuario, total) VALUES (%s, %s)",
-                    (current_user.id, total))
+        cur.execute("INSERT INTO pedido (total) VALUES (%s)", (total,))
         idpedido = cur.lastrowid
+        # tu tabla `realiza` une al usuario con su pedido
+        cur.execute("INSERT INTO realiza (idusuario, idpedido) VALUES (%s, %s)",
+                    (current_user.id, idpedido))
 
         for it in items:
             cur.execute(
@@ -464,12 +472,13 @@ def carrito_pagar():
 @login_required
 def mis_pedidos():
     cur = db.connection.cursor()
-    cur.execute("SELECT idpedido, fecha, total FROM pedido "
-                "WHERE idusuario = %s ORDER BY idpedido DESC", (current_user.id,))
+    cur.execute("SELECT p.idpedido, p.fecha, p.total, p.estado FROM pedido p "
+                "JOIN realiza r ON r.idpedido = p.idpedido "
+                "WHERE r.idusuario = %s ORDER BY p.idpedido DESC", (current_user.id,))
     cabeceras = cur.fetchall()
 
     pedidos = []
-    for idpedido, fecha, total in cabeceras:
+    for idpedido, fecha, total, estado in cabeceras:
         cur.execute(
             "SELECT c.idcontiene, c.idbalon, b.nombre, b.imagen, c.cantidad, c.precio_unitario "
             "FROM contiene c JOIN balon b ON b.balon = c.idbalon "
@@ -477,9 +486,385 @@ def mis_pedidos():
         lineas = [dict(zip(("idcontiene", "idbalon", "nombre", "imagen",
                             "cantidad", "precio_unitario"), f))
                   for f in cur.fetchall()]
-        pedidos.append(dict(idpedido=idpedido, fecha=fecha, total=total, lineas=lineas))
+        pedidos.append(dict(idpedido=idpedido, fecha=fecha, total=total, estado=estado, lineas=lineas))
     cur.close()
     return flask.render_template("mis_pedidos.html", pedidos=pedidos)
+
+
+# =========================================================
+#  ADMIN: MANTENIMIENTO DE PRODUCTOS, RUBROS Y PEDIDOS
+#  (tablas balon, rubro y pedido/contiene)
+# =========================================================
+
+EXT_IMAGEN     = (".jpg", ".jpeg", ".png", ".webp")
+ESTADOS_PEDIDO = ("Pendiente", "Enviado", "Entregado", "Cancelado")
+
+
+def _imagen_existe(nombre):
+    """True si el archivo de la foto está de verdad en static/img/."""
+    if not nombre:
+        return False
+    return os.path.isfile(os.path.join(sonricksstoreApp.static_folder, "img", nombre))
+
+
+sonricksstoreApp.jinja_env.globals["imagen_existe"] = _imagen_existe
+
+
+def _fecha_texto(valor):
+    return valor.strftime("%d/%m/%Y %H:%M") if hasattr(valor, "strftime") else str(valor or "")
+
+
+def _lista_rubros():
+    cur = db.connection.cursor()
+    cur.execute("SELECT idrubro, nombre FROM rubro ORDER BY nombre")
+    filas = cur.fetchall()
+    cur.close()
+    return filas
+
+
+def _guardar_imagen(archivo):
+    """Guarda la foto subida en static/img/ sin pisar otra con el mismo nombre.
+    Regresa el nombre final o None si no se subió nada."""
+    if not archivo or not archivo.filename:
+        return None
+    base, ext = os.path.splitext(secure_filename(archivo.filename))
+    ext = ext.lower()
+    if ext not in EXT_IMAGEN:
+        raise ValueError("La imagen debe ser .jpg, .jpeg, .png o .webp.")
+    base    = (base or "balon")[:30]
+    carpeta = os.path.join(sonricksstoreApp.static_folder, "img")
+    nombre, n = base + ext, 1
+    while os.path.exists(os.path.join(carpeta, nombre)):
+        nombre = f"{base}_{n}{ext}"
+        n += 1
+    archivo.save(os.path.join(carpeta, nombre))
+    return nombre
+
+
+def _leer_producto():
+    """Valida el formulario de producto. Lanza ValueError con el mensaje a mostrar."""
+    f = flask.request.form
+    nombre    = f.get("nombre", "").strip()
+    marca     = f.get("marca", "").strip()
+    categoria = f.get("categoria", "").strip()
+    try:
+        precio      = float(f.get("precio", "").replace(",", "."))
+        existencias = int(f.get("existencias", ""))
+    except ValueError:
+        raise ValueError("Precio y existencias deben ser números (existencias, entero).")
+
+    if not nombre or not marca:
+        raise ValueError("Nombre y marca son obligatorios.")
+    if len(nombre) > 150 or len(marca) > 50:
+        raise ValueError("Nombre (máx. 150) o marca (máx. 50) demasiado largos.")
+    if precio < 0 or existencias < 0:
+        raise ValueError("Precio y existencias no pueden ser negativos.")
+    if categoria not in [r[1] for r in _lista_rubros()]:
+        raise ValueError("Elige un rubro de la lista (puedes crearlos en Rubros).")
+
+    imagen = _guardar_imagen(flask.request.files.get("archivo")) or f.get("imagen", "").strip()
+    if len(imagen) > 50:
+        raise ValueError("El nombre de la imagen no puede pasar de 50 caracteres.")
+    return dict(nombre=nombre, marca=marca, categoria=categoria,
+                precio=precio, existencias=existencias, imagen=imagen)
+
+
+def _registrar_administra(cur, idusuario, idbalon):
+    """Tu tabla `administra`: deja constancia de qué administrador maneja cada producto."""
+    cur.execute("SELECT 1 FROM administra WHERE idusuario = %s AND idbalon = %s",
+                (idusuario, idbalon))
+    if cur.fetchone() is None:
+        cur.execute("INSERT INTO administra (idusuario, idbalon) VALUES (%s, %s)",
+                    (idusuario, idbalon))
+
+
+# ---------- PRODUCTOS ----------
+
+@sonricksstoreApp.route("/admin/productos")
+@login_required
+@admin_requerido
+def admin_productos():
+    q = flask.request.args.get("q", "").strip()
+    cur = db.connection.cursor()
+    sql = "SELECT balon, nombre, marca, categoria, precio, existencias, imagen FROM balon"
+    params = ()
+    if q:
+        sql += " WHERE nombre LIKE %s OR marca LIKE %s OR categoria LIKE %s"
+        params = (f"%{q}%",) * 3
+    cur.execute(sql + " ORDER BY balon DESC", params)
+    columnas = [c[0] for c in cur.description]
+    productos = [dict(zip(columnas, f)) for f in cur.fetchall()]
+    cur.close()
+    return flask.render_template("admin_productos.html", productos=productos, q=q)
+
+
+@sonricksstoreApp.route("/admin/productos/nuevo", methods=["GET", "POST"])
+@login_required
+@admin_requerido
+def admin_producto_nuevo():
+    if flask.request.method == "POST":
+        try:
+            d = _leer_producto()
+        except ValueError as e:
+            flask.flash(str(e), "error")
+            return flask.render_template("admin_producto_form.html", nuevo=True,
+                                         producto=flask.request.form, rubros=_lista_rubros())
+        cur = db.connection.cursor()
+        cur.execute(
+            "INSERT INTO balon (nombre, marca, categoria, precio, existencias, imagen) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (d["nombre"], d["marca"], d["categoria"], d["precio"], d["existencias"], d["imagen"]))
+        _registrar_administra(cur, current_user.id, cur.lastrowid)
+        db.connection.commit()
+        cur.close()
+        flask.flash("Producto agregado.", "exito")
+        return flask.redirect(flask.url_for("admin_productos"))
+    return flask.render_template("admin_producto_form.html", nuevo=True,
+                                 producto={}, rubros=_lista_rubros())
+
+
+@sonricksstoreApp.route("/admin/productos/<int:idbalon>/editar", methods=["GET", "POST"])
+@login_required
+@admin_requerido
+def admin_producto_editar(idbalon):
+    cur = db.connection.cursor()
+    cur.execute("SELECT balon, nombre, marca, categoria, precio, existencias, imagen "
+                "FROM balon WHERE balon = %s", (idbalon,))
+    fila = cur.fetchone()
+    columnas = [c[0] for c in cur.description]
+    cur.close()
+    if fila is None:
+        flask.flash("Ese producto no existe.", "error")
+        return flask.redirect(flask.url_for("admin_productos"))
+    actual = dict(zip(columnas, fila))
+
+    if flask.request.method == "POST":
+        try:
+            d = _leer_producto()
+        except ValueError as e:
+            flask.flash(str(e), "error")
+            return flask.render_template("admin_producto_form.html", nuevo=False,
+                                         producto={**flask.request.form.to_dict(), "balon": idbalon},
+                                         rubros=_lista_rubros())
+        cur = db.connection.cursor()
+        cur.execute(
+            "UPDATE balon SET nombre=%s, marca=%s, categoria=%s, precio=%s, "
+            "existencias=%s, imagen=%s WHERE balon=%s",
+            (d["nombre"], d["marca"], d["categoria"], d["precio"],
+             d["existencias"], d["imagen"], idbalon))
+        _registrar_administra(cur, current_user.id, idbalon)
+        db.connection.commit()
+        cur.close()
+        flask.flash("Producto actualizado.", "exito")
+        return flask.redirect(flask.url_for("admin_productos"))
+
+    return flask.render_template("admin_producto_form.html", nuevo=False,
+                                 producto=actual, rubros=_lista_rubros())
+
+
+@sonricksstoreApp.route("/admin/productos/<int:idbalon>/eliminar", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_producto_eliminar(idbalon):
+    cur = db.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM contiene WHERE idbalon = %s", (idbalon,))
+    vendidos = cur.fetchone()[0]
+    if vendidos:
+        flask.flash("No se puede eliminar: ese producto ya aparece en pedidos. "
+                    "Ponle existencias 0 para que salga como Agotado.", "error")
+    else:
+        cur.execute("DELETE FROM administra WHERE idbalon = %s", (idbalon,))
+        cur.execute("DELETE FROM balon WHERE balon = %s", (idbalon,))
+        db.connection.commit()
+        flask.flash("Producto eliminado.", "exito")
+    cur.close()
+    return flask.redirect(flask.url_for("admin_productos"))
+
+
+# ---------- RUBROS ----------
+
+@sonricksstoreApp.route("/admin/rubros")
+@login_required
+@admin_requerido
+def admin_rubros():
+    cur = db.connection.cursor()
+    cur.execute(
+        "SELECT r.idrubro, r.nombre, COUNT(b.balon) FROM rubro r "
+        "LEFT JOIN balon b ON b.categoria = r.nombre "
+        "GROUP BY r.idrubro, r.nombre ORDER BY r.nombre")
+    rubros = [dict(idrubro=a, nombre=b, productos=c) for a, b, c in cur.fetchall()]
+    cur.close()
+    return flask.render_template("admin_rubros.html", rubros=rubros)
+
+
+@sonricksstoreApp.route("/admin/rubros/nuevo", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_rubro_nuevo():
+    nombre = flask.request.form.get("nombre", "").strip()
+    if not nombre or len(nombre) > 60:
+        flask.flash("Escribe un nombre de rubro (máximo 60 caracteres).", "error")
+        return flask.redirect(flask.url_for("admin_rubros"))
+    cur = db.connection.cursor()
+    try:
+        cur.execute("INSERT INTO rubro (nombre) VALUES (%s)", (nombre,))
+        db.connection.commit()
+        flask.flash("Rubro agregado.", "exito")
+    except Exception:
+        db.connection.rollback()
+        flask.flash("Ese rubro ya existe.", "error")
+    finally:
+        cur.close()
+    return flask.redirect(flask.url_for("admin_rubros"))
+
+
+@sonricksstoreApp.route("/admin/rubros/<int:idrubro>/editar", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_rubro_editar(idrubro):
+    nuevo = flask.request.form.get("nombre", "").strip()
+    if not nuevo or len(nuevo) > 60:
+        flask.flash("Escribe un nombre de rubro (máximo 60 caracteres).", "error")
+        return flask.redirect(flask.url_for("admin_rubros"))
+    cur = db.connection.cursor()
+    try:
+        cur.execute("SELECT nombre FROM rubro WHERE idrubro = %s", (idrubro,))
+        fila = cur.fetchone()
+        if fila is None:
+            flask.flash("Ese rubro no existe.", "error")
+        else:
+            # al renombrar, los productos de ese rubro se actualizan también
+            cur.execute("UPDATE rubro SET nombre = %s WHERE idrubro = %s", (nuevo, idrubro))
+            cur.execute("UPDATE balon SET categoria = %s WHERE categoria = %s", (nuevo, fila[0]))
+            db.connection.commit()
+            flask.flash("Rubro actualizado.", "exito")
+    except Exception:
+        db.connection.rollback()
+        flask.flash("Ya existe un rubro con ese nombre.", "error")
+    finally:
+        cur.close()
+    return flask.redirect(flask.url_for("admin_rubros"))
+
+
+@sonricksstoreApp.route("/admin/rubros/<int:idrubro>/eliminar", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_rubro_eliminar(idrubro):
+    cur = db.connection.cursor()
+    cur.execute("SELECT COUNT(*) FROM balon b JOIN rubro r ON b.categoria = r.nombre "
+                "WHERE r.idrubro = %s", (idrubro,))
+    if cur.fetchone()[0]:
+        flask.flash("No se puede eliminar: todavía hay productos en ese rubro.", "error")
+    else:
+        cur.execute("DELETE FROM rubro WHERE idrubro = %s", (idrubro,))
+        db.connection.commit()
+        flask.flash("Rubro eliminado.", "exito")
+    cur.close()
+    return flask.redirect(flask.url_for("admin_rubros"))
+
+
+# ---------- PEDIDOS ----------
+
+def _sin_cliente(idu):
+    return "Sin cliente asignado" if idu is None else f"Usuario eliminado (#{idu})"
+
+
+def _clientes():
+    """{idusuario: (id, nombre, correo, ...)} usando ModelUser.get_all"""
+    return {u[0]: u for u in ModelUser().get_all(db)}
+
+
+@sonricksstoreApp.route("/admin/pedidos")
+@login_required
+@admin_requerido
+def admin_pedidos():
+    estado = flask.request.args.get("estado", "")
+    cur = db.connection.cursor()
+    sql = ("SELECT p.idpedido, r.idusuario, p.fecha, p.total, p.estado, "
+           "COALESCE(SUM(c.cantidad), 0) FROM pedido p "
+           "LEFT JOIN realiza r ON r.idpedido = p.idpedido "
+           "LEFT JOIN contiene c ON c.idpedido = p.idpedido ")
+    params = ()
+    if estado in ESTADOS_PEDIDO:
+        sql += "WHERE p.estado = %s "
+        params = (estado,)
+    sql += "GROUP BY p.idpedido, r.idusuario, p.fecha, p.total, p.estado ORDER BY p.idpedido DESC"
+    cur.execute(sql, params)
+    filas = cur.fetchall()
+    cur.close()
+
+    clientes = _clientes()
+    pedidos = []
+    for idp, idu, fecha, total, est, piezas in filas:
+        u = clientes.get(idu)
+        pedidos.append(dict(idpedido=idp, idusuario=idu, fecha=_fecha_texto(fecha),
+                            total=total, estado=est, piezas=int(piezas),
+                            cliente=u[1] if u else _sin_cliente(idu),
+                            correo=u[2] if u else ""))
+    return flask.render_template("admin_pedidos.html", pedidos=pedidos,
+                                 estados=ESTADOS_PEDIDO, filtro=estado)
+
+
+@sonricksstoreApp.route("/admin/pedidos/<int:idpedido>")
+@login_required
+@admin_requerido
+def admin_pedido_detalle(idpedido):
+    cur = db.connection.cursor()
+    cur.execute("SELECT p.idpedido, r.idusuario, p.fecha, p.total, p.estado FROM pedido p "
+                "LEFT JOIN realiza r ON r.idpedido = p.idpedido WHERE p.idpedido = %s", (idpedido,))
+    fila = cur.fetchone()
+    if fila is None:
+        cur.close()
+        flask.flash("Ese pedido no existe.", "error")
+        return flask.redirect(flask.url_for("admin_pedidos"))
+    cur.execute(
+        "SELECT c.idcontiene, c.idbalon, b.nombre, b.imagen, c.cantidad, c.precio_unitario "
+        "FROM contiene c LEFT JOIN balon b ON b.balon = c.idbalon "
+        "WHERE c.idpedido = %s ORDER BY c.idcontiene", (idpedido,))
+    lineas = [dict(zip(("idcontiene", "idbalon", "nombre", "imagen",
+                        "cantidad", "precio_unitario"), f)) for f in cur.fetchall()]
+    cur.close()
+
+    u = _clientes().get(fila[1])
+    pedido = dict(idpedido=fila[0], idusuario=fila[1], fecha=_fecha_texto(fila[2]),
+                  total=fila[3], estado=fila[4],
+                  cliente=u[1] if u else _sin_cliente(fila[1]),
+                  correo=u[2] if u else "")
+    return flask.render_template("admin_pedido_detalle.html", pedido=pedido,
+                                 lineas=lineas, estados=ESTADOS_PEDIDO)
+
+
+@sonricksstoreApp.route("/admin/pedidos/<int:idpedido>/estado", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_pedido_estado(idpedido):
+    estado = flask.request.form.get("estado", "")
+    if estado not in ESTADOS_PEDIDO:
+        flask.flash("Estado no válido.", "error")
+    else:
+        cur = db.connection.cursor()
+        cur.execute("UPDATE pedido SET estado = %s WHERE idpedido = %s", (estado, idpedido))
+        db.connection.commit()
+        cur.close()
+        flask.flash(f"Pedido #{idpedido}: {estado}.", "exito")
+    volver = flask.request.form.get("volver", "")
+    if not volver.startswith("/admin/"):
+        volver = flask.url_for("admin_pedidos")
+    return flask.redirect(volver)
+
+
+@sonricksstoreApp.route("/admin/pedidos/<int:idpedido>/eliminar", methods=["POST"])
+@login_required
+@admin_requerido
+def admin_pedido_eliminar(idpedido):
+    cur = db.connection.cursor()
+    cur.execute("DELETE FROM contiene WHERE idpedido = %s", (idpedido,))
+    cur.execute("DELETE FROM realiza WHERE idpedido = %s", (idpedido,))
+    cur.execute("DELETE FROM pedido WHERE idpedido = %s", (idpedido,))
+    db.connection.commit()
+    cur.close()
+    flask.flash(f"Pedido #{idpedido} eliminado.", "exito")
+    return flask.redirect(flask.url_for("admin_pedidos"))
 
 
 # =========================================================
@@ -491,30 +876,6 @@ def mis_pedidos():
 def productos_por_rubro(id_rubro):
     flask.flash("Las categorías todavía están en construcción.", "exito")
     return flask.redirect(flask.url_for("home") + "#productos")
-
-
-@sonricksstoreApp.route("/admin/productos")
-@login_required
-@admin_requerido
-def admin_productos():
-    flask.flash("Productos todavía está en construcción.", "exito")
-    return flask.redirect(flask.url_for("admin_dashboard"))
-
-
-@sonricksstoreApp.route("/admin/rubros")
-@login_required
-@admin_requerido
-def admin_rubros():
-    flask.flash("Rubros todavía está en construcción.", "exito")
-    return flask.redirect(flask.url_for("admin_dashboard"))
-
-
-@sonricksstoreApp.route("/admin/pedidos")
-@login_required
-@admin_requerido
-def admin_pedidos():
-    flask.flash("Pedidos todavía está en construcción.", "exito")
-    return flask.redirect(flask.url_for("admin_dashboard"))
 
 
 # =========================================================

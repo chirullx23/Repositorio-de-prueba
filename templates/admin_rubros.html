@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block titulo %}Rubros — Panel de administración{% endblock %}
+{% block contenido %}
+<div class="container py-5" style="max-width:860px">
+  <h1 class="mb-4">Rubros</h1>
+
+  <form method="post" action="{{ url_for('admin_rubro_nuevo') }}" class="d-flex gap-2 mb-4">
+    <input class="form-control" name="nombre" maxlength="60" placeholder="Nuevo rubro (ej. Fútbol, Baloncesto…)" required>
+    <button class="btn btn-dark text-nowrap">+ Agregar</button>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>#</th><th>Nombre</th><th class="text-center">Productos</th><th></th></tr></thead>
+      <tbody>
+        {% for r in rubros %}
+        <tr>
+          <td>{{ r.idrubro }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin_rubro_editar', idrubro=r.idrubro) }}" class="d-flex gap-2 m-0">
+              <input class="form-control form-control-sm" name="nombre" maxlength="60" value="{{ r.nombre }}" required>
+              <button class="btn btn-outline-dark btn-sm">Guardar</button>
+            </form>
+          </td>
+          <td class="text-center">{{ r.productos }}</td>
+          <td class="text-end">
+            <form method="post" action="{{ url_for('admin_rubro_eliminar', idrubro=r.idrubro) }}" class="d-inline m-0"
+                  onsubmit="return confirm('¿Eliminar este rubro?');">
+              <button class="btn btn-outline-danger btn-sm" {% if r.productos %}title="Tiene productos"{% endif %}>Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center py-4">Todavía no hay rubros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-body-secondary">Al cambiar el nombre de un rubro, sus productos se actualizan solos. Un rubro con productos no se puede eliminar.</p>
+</div>
+{% endblock %}

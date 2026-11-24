@@ -7,7 +7,7 @@
   {% for p in pedidos %}
   <div class="card mb-4">
     <div class="card-header d-flex flex-wrap justify-content-between gap-2">
-      <strong>Pedido #{{ p.idpedido }}</strong>
+      <strong>Pedido #{{ p.idpedido }}</strong> <span class="badge text-bg-secondary ms-1">{{ p.estado }}</span>
       <span class="text-body-secondary">{% if p.fecha.strftime is defined %}{{ p.fecha.strftime('%d/%m/%Y %H:%M') }}{% else %}{{ p.fecha }}{% endif %}</span>
       <strong>Total: ${{ "{:,.2f}".format(p.total) }}</strong>
     </div>

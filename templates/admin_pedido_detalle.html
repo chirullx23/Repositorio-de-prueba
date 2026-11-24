@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block titulo %}Pedido #{{ pedido.idpedido }} — Panel de administración{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{{ url_for('admin_pedidos') }}">← Volver a pedidos</a>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="mb-1">Pedido #{{ pedido.idpedido }}</h1>
+      <p class="mb-0">{{ pedido.cliente }}{% if pedido.correo %} · {{ pedido.correo }}{% endif %}</p>
+      <p class="text-body-secondary mb-0">{{ pedido.fecha }}</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <form method="post" action="{{ url_for('admin_pedido_estado', idpedido=pedido.idpedido) }}" class="m-0">
+        <input type="hidden" name="volver" value="{{ url_for('admin_pedido_detalle', idpedido=pedido.idpedido) }}">
+        <select name="estado" class="form-select" onchange="this.form.submit()">
+          {% for e in estados %}<option value="{{ e }}" {% if pedido.estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+        </select>
+      </form>
+      <form method="post" action="{{ url_for('admin_pedido_eliminar', idpedido=pedido.idpedido) }}" class="m-0"
+            onsubmit="return confirm('¿Eliminar este pedido y sus partidas?');">
+        <button class="btn btn-outline-danger">Eliminar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr><th>Partida</th><th>Producto</th><th class="text-center">Cantidad</th>
+            <th class="text-end">Precio unitario</th><th class="text-end">Subtotal</th></tr>
+      </thead>
+      <tbody>
+        {% for l in lineas %}
+        <tr>
+          <td>#{{ l.idcontiene }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              {% if imagen_existe(l.imagen) %}
+              <img src="{{ url_for('static', filename='img/' ~ l.imagen) }}" alt="" width="48" height="48"
+                   style="object-fit:cover;border-radius:6px">
+              {% endif %}
+              {{ l.nombre or ('Producto eliminado (#' ~ l.idbalon ~ ')') }}
+            </div>
+          </td>
+          <td class="text-center">{{ l.cantidad }}</td>
+          <td class="text-end">${{ "{:,.2f}".format(l.precio_unitario) }}</td>
+          <td class="text-end">${{ "{:,.2f}".format(l.precio_unitario * l.cantidad) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="4" class="text-end fs-5">Total</td>
+            <td class="text-end fs-5 fw-bold">${{ "{:,.2f}".format(pedido.total) }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block titulo %}Pedidos — Panel de administración{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="m-0">Pedidos</h1>
+    <form method="get" class="d-flex gap-2 m-0">
+      <select name="estado" class="form-select" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}<option value="{{ e }}" {% if filtro == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th class="text-center">Piezas</th>
+            <th class="text-end">Total</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr>
+          <td><a href="{{ url_for('admin_pedido_detalle', idpedido=p.idpedido) }}">#{{ p.idpedido }}</a></td>
+          <td>{{ p.fecha }}</td>
+          <td>{{ p.cliente }}{% if p.correo %}<br><small class="text-body-secondary">{{ p.correo }}</small>{% endif %}</td>
+          <td class="text-center">{{ p.piezas }}</td>
+          <td class="text-end">${{ "{:,.2f}".format(p.total) }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin_pedido_estado', idpedido=p.idpedido) }}" class="m-0">
+              <input type="hidden" name="volver" value="{{ url_for('admin_pedidos') }}">
+              <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for e in estados %}<option value="{{ e }}" {% if p.estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}
+              </select>
+            </form>
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-outline-dark btn-sm" href="{{ url_for('admin_pedido_detalle', idpedido=p.idpedido) }}">Ver</a>
+            <form method="post" action="{{ url_for('admin_pedido_eliminar', idpedido=p.idpedido) }}" class="d-inline"
+                  onsubmit="return confirm('¿Eliminar el pedido #{{ p.idpedido }} y sus partidas?');">
+              <button class="btn btn-outline-danger btn-sm">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center py-4">No hay pedidos{% if filtro %} con estado «{{ filtro }}»{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

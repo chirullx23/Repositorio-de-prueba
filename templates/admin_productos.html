@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block titulo %}Productos — Panel de administración{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="m-0">Productos</h1>
+    <a class="btn btn-dark" href="{{ url_for('admin_producto_nuevo') }}">+ Nuevo producto</a>
+  </div>
+
+  <form method="get" class="d-flex gap-2 mb-4">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre, marca o rubro">
+    <button class="btn btn-outline-dark">Buscar</button>
+    {% if q %}<a class="btn btn-outline-secondary" href="{{ url_for('admin_productos') }}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>#</th><th>Imagen</th><th>Nombre</th><th>Marca</th><th>Rubro</th>
+          <th class="text-end">Precio</th><th class="text-center">Existencias</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        <tr>
+          <td>{{ p.balon }}</td>
+          <td>
+            {% if imagen_existe(p.imagen) %}
+            <img src="{{ url_for('static', filename='img/' ~ p.imagen) }}" alt="" width="56" height="56"
+                 style="object-fit:cover;border-radius:8px">
+            {% else %}
+            <span class="badge text-bg-warning" title="Falta el archivo {{ p.imagen }} en static/img">Sin foto</span>
+            {% endif %}
+          </td>
+          <td style="max-width:320px">{{ p.nombre }}</td>
+          <td>{{ p.marca }}</td>
+          <td>{{ p.categoria }}</td>
+          <td class="text-end">${{ "{:,.2f}".format(p.precio) }}</td>
+          <td class="text-center">
+            {% if p.existencias == 0 %}<span class="badge text-bg-secondary">Agotado</span>
+            {% elif p.existencias <= 5 %}<span class="badge text-bg-warning">{{ p.existencias }}</span>
+            {% else %}{{ p.existencias }}{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-outline-dark btn-sm" href="{{ url_for('admin_producto_editar', idbalon=p.balon) }}">Editar</a>
+            <form method="post" action="{{ url_for('admin_producto_eliminar', idbalon=p.balon) }}" class="d-inline"
+                  onsubmit="return confirm('¿Eliminar este producto?');">
+              <button class="btn btn-outline-danger btn-sm">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center py-4">No hay productos{% if q %} que coincidan con «{{ q }}»{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-body-secondary">{{ productos|length }} producto(s)</p>
+</div>
+{% endblock %}

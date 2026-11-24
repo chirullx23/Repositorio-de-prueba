@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block titulo %}{{ 'Nuevo producto' if nuevo else 'Editar producto' }} — Panel de administración{% endblock %}
+{% block contenido %}
+<div class="container py-5" style="max-width:760px">
+  <h1 class="mb-4">{{ 'Nuevo producto' if nuevo else 'Editar producto #' ~ producto.get('balon') }}</h1>
+
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    <div class="col-12">
+      <label class="form-label" for="nombre">Nombre (máx. 150)</label>
+      <input class="form-control" id="nombre" name="nombre" maxlength="150" required value="{{ producto.get('nombre', '') }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="marca">Marca (máx. 50)</label>
+      <input class="form-control" id="marca" name="marca" maxlength="50" required value="{{ producto.get('marca', '') }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="categoria">Rubro</label>
+      <select class="form-select" id="categoria" name="categoria" required>
+        <option value="" disabled {% if not producto.get('categoria') %}selected{% endif %}>Elige un rubro…</option>
+        {% for r in rubros %}
+        <option value="{{ r[1] }}" {% if producto.get('categoria') == r[1] %}selected{% endif %}>{{ r[1] }}</option>
+        {% endfor %}
+      </select>
+      {% if not rubros %}<div class="form-text text-danger">Aún no hay rubros. Crea uno en la sección Rubros.</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="precio">Precio ($)</label>
+      <input class="form-control" id="precio" name="precio" type="number" step="0.01" min="0" required value="{{ producto.get('precio', '') }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="existencias">Existencias</label>
+      <input class="form-control" id="existencias" name="existencias" type="number" step="1" min="0" required value="{{ producto.get('existencias', '') }}">
+    </div>
+
+    <div class="col-12"><hr></div>
+
+    <div class="col-12">
+      <label class="form-label" for="archivo">Subir imagen (.jpg, .png, .webp)</label>
+      <input class="form-control" id="archivo" name="archivo" type="file" accept=".jpg,.jpeg,.png,.webp">
+      <div class="form-text">Si subes una imagen nueva, reemplaza el nombre de abajo.</div>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="imagen">Archivo de imagen en static/img (máx. 50)</label>
+      <input class="form-control" id="imagen" name="imagen" maxlength="50" value="{{ producto.get('imagen', '') }}">
+      {% if imagen_existe(producto.get('imagen')) %}
+      <img src="{{ url_for('static', filename='img/' ~ producto.get('imagen')) }}" alt="" class="mt-3"
+           width="120" height="120" style="object-fit:cover;border-radius:10px">
+      {% elif producto.get('imagen') %}
+      <div class="form-text text-danger mt-2">El archivo «{{ producto.get('imagen') }}» no está en static/img. Sube la foto aquí arriba para que se vea en la tienda.</div>
+      {% endif %}
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-dark" type="submit">{{ 'Agregar producto' if nuevo else 'Guardar cambios' }}</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('admin_productos') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
